@@ -23,7 +23,7 @@ To install the SDK via Swift Package Manager:
 2. Go to **File > Add Packages Dependencies**
 3. In the search bar, paste the SDK’s GitHub repository URL:
 ```arduino
-https://git.aala.pk/ali/shortiosdk
+https://github.com/Short-io/ios-sdk/
 ```
 4. Choose the latest version or a specific branch.
 5. Click Add Package.
@@ -75,11 +75,16 @@ let apiKey = "your_public_apiKey" // Replace with your Short.io Public API Key
         
 Task {
     do {
-        let response = try await sdk.createShortLink(
+        let result = try await sdk.createShortLink(
             parameters: parameters,
             apiKey: apiKey
         )
-        print("Short URL created: \(response.shortURL)")
+        switch result {
+            case .success(let response):
+                print("Short URL created: \(response.shortURL)")
+            case .failure(let errorResponse):
+                print("Error occurred: \(errorResponse.message), Code: \(errorResponse.code ?? "N/A")")
+        }
     } catch {
         print("Error: \(error.localizedDescription)")
     }
@@ -122,4 +127,4 @@ To enable universal link handling, **Short.io** must generate the `apple-app-sit
 // Example:
 ABCDEFGHIJ.com.example.app
 ```
-5. Click the **Save** button.
+4. Click the **Save** button.

@@ -128,3 +128,35 @@ To enable universal link handling, **Short.io** must generate the `apple-app-sit
 ABCDEFGHIJ.com.example.app
 ```
 4. Click the **Save** button.
+
+## 🛠️ Handling Universal Links in Your App
+
+To handle Universal Links in your SwiftUI app, use the `onOpenURL` modifier at the entry point of your app to process incoming URLs and navigate to the appropriate views. Below is an example implementation in SwiftUI.
+
+```swift
+import SwiftUI
+
+@main
+struct deeplinkAppApp: App {
+    
+    var body: some Scene {
+        WindowGroup {
+            ContentView()
+                .onOpenURL { url in
+                    handleURL(url)
+                }
+        }
+    }
+
+    func handleURL(_ url: URL) {
+        // Parse the URL and navigate to the appropriate view on the base of host or path
+        guard let components = URLComponents(url: url, resolvingAgainstBaseURL: true),
+              let host = components.host,
+              let path = components.path.split(separator: "/").first else {
+            return
+        }
+
+        print("Host: \(host), Path: \(path)")
+    }
+}
+```

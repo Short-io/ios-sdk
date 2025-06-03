@@ -149,7 +149,7 @@ struct deeplinkAppApp: App {
     }
 
     func handleURL(_ url: URL) {
-        // Parse the URL and navigate to the appropriate view on the base of host or path
+        // Parse the URL and navigate to the appropriate view based on host or path
         guard let components = URLComponents(url: url, resolvingAgainstBaseURL: true),
               let host = components.host,
               let path = components.path.split(separator: "/").first else {

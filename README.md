@@ -91,6 +91,45 @@ Task {
 }
 ```
 
+## 📄 API Parameters
+
+The `ShortIOParameters` struct is used to define the details of the short link you want to create. Below are the available parameters:
+
+
+| Parameter           | Type        | Required  | Description                                                  |
+| ------------------- | ----------- | --------  | ------------------------------------------------------------ |
+| `domain`            | `String`    | ✅        | Your Short.io domain (e.g., `example.short.gy`)              |
+| `originalURL`       | `String`    | ✅        | The original URL to be shortened                             |
+| `cloaking`          | `Bool`      | ❌        | If `true`, hides the destination URL from the user           |
+| `password`          | `String`    | ❌        | Password to protect the short link                           |
+| `redirectType`      | `Int`       | ❌        | Type of redirect (e.g., 301, 302)                            |
+| `expiresAt`         | `Int`       | ❌        | Expiration timestamp in Unix format                          |
+| `expiredURL`        | `String`    | ❌        | URL to redirect after expiration                             |
+| `title`             | `String`    | ❌        | Custom title for the link                                    |
+| `tags`              | `[String]`  | ❌        | Tags to categorize the link                                  |
+| `utmSource`         | `String`    | ❌        | UTM source parameter                                         |
+| `utmMedium`         | `String`    | ❌        | UTM medium parameter                                         |
+| `utmCampaign`       | `String`    | ❌        | UTM campaign parameter                                       |
+| `utmTerm`           | `String`    | ❌        | UTM term parameter                                           |
+| `utmContent`        | `String`    | ❌        | UTM content parameter                                        |
+| `ttl`               | `String`    | ❌        | Time to live for the short link                              |
+| `path`              | `String`    | ❌        | Custom path for the short link                               |
+| `androidURL`        | `String`    | ❌        | Fallback URL for Android                                     |
+| `iphoneURL`         | `String`    | ❌        | Fallback URL for iPhone                                      |
+| `createdAt`         | `Int`       | ❌        | Custom creation timestamp                                    |
+| `clicksLimit`       | `Int`       | ❌        | Maximum number of clicks allowed                             |
+| `passwordContact`   | `Bool`      | ❌        | Whether contact details are required for password access     |
+| `skipQS`            | `Bool`      | ❌        | If `true`, skips query string on redirect (default: `false`) |
+| `archived`          | `Bool`      | ❌        | If `true`, archives the short link (default: `false`)        |
+| `splitURL`          | `String`    | ❌        | URL for A/B testing                                          |
+| `splitPercent`      | `Int`       | ❌        | Split percentage for A/B testing                             |
+| `integrationAdroll` | `String`    | ❌        | AdRoll integration token                                     |
+| `integrationFB`     | `String`    | ❌        | Facebook Pixel ID                                            |
+| `integrationGA`     | `String`    | ❌        | Google Analytics ID                                          |
+| `integrationGTM`    | `String`    | ❌        | Google Tag Manager container ID                              |
+| `folderId`          | `String`    | ❌        | ID of the folder where the link should be created            |
+
+
 ## 🌐 Deep Linking Setup (Universal Links for iOS)
 
 To ensure your app can handle deep links created via Short.io, you need to configure Universal Links properly using **Associated Domains** in your Xcode project.
@@ -128,3 +167,35 @@ To enable universal link handling, **Short.io** must generate the `apple-app-sit
 ABCDEFGHIJ.com.example.app
 ```
 4. Click the **Save** button.
+
+## 🛠️ Handling Universal Links in Your App
+
+To handle Universal Links in your SwiftUI app, use the `onOpenURL` modifier at the entry point of your app to process incoming URLs and navigate to the appropriate views. Below is an example implementation in SwiftUI.
+
+```swift
+import SwiftUI
+
+@main
+struct deeplinkAppApp: App {
+    
+    var body: some Scene {
+        WindowGroup {
+            ContentView()
+                .onOpenURL { url in
+                    handleURL(url)
+                }
+        }
+    }
+
+    func handleURL(_ url: URL) {
+        // Parse the URL and navigate to the appropriate view based on host or path
+        guard let components = URLComponents(url: url, resolvingAgainstBaseURL: true),
+              let host = components.host,
+              let path = components.path.split(separator: "/").first else {
+            return
+        }
+
+        print("Host: \(host), Path: \(path)")
+    }
+}
+```

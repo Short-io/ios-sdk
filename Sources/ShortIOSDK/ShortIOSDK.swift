@@ -63,6 +63,16 @@ public class ShortIOSDK {
             throw error
         }
     }
+
+    public func handleOpen(_ url: URL) -> URLComponents? {
+        guard let components = URLComponents(url: url, resolvingAgainstBaseURL: true) else {
+            return nil
+        }
+        guard components.scheme != nil else {
+            return nil
+        }
+        return components
+    }
 }
 
 // MARK: - Result Type

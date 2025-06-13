@@ -96,38 +96,38 @@ Task {
 The `ShortIOParameters` struct is used to define the details of the short link you want to create. Below are the available parameters:
 
 
-| Parameter           | Type        | Required  | Description                                                  |
-| ------------------- | ----------- | --------  | ------------------------------------------------------------ |
-| `domain`            | `String`    | ✅        | Your Short.io domain (e.g., `example.short.gy`)              |
-| `originalURL`       | `String`    | ✅        | The original URL to be shortened                             |
-| `cloaking`          | `Bool`      | ❌        | If `true`, hides the destination URL from the user           |
-| `password`          | `String`    | ❌        | Password to protect the short link                           |
-| `redirectType`      | `Int`       | ❌        | Type of redirect (e.g., 301, 302)                            |
-| `expiresAt`         | `Int`       | ❌        | Expiration timestamp in Unix format                          |
-| `expiredURL`        | `String`    | ❌        | URL to redirect after expiration                             |
-| `title`             | `String`    | ❌        | Custom title for the link                                    |
-| `tags`              | `[String]`  | ❌        | Tags to categorize the link                                  |
-| `utmSource`         | `String`    | ❌        | UTM source parameter                                         |
-| `utmMedium`         | `String`    | ❌        | UTM medium parameter                                         |
-| `utmCampaign`       | `String`    | ❌        | UTM campaign parameter                                       |
-| `utmTerm`           | `String`    | ❌        | UTM term parameter                                           |
-| `utmContent`        | `String`    | ❌        | UTM content parameter                                        |
-| `ttl`               | `String`    | ❌        | Time to live for the short link                              |
-| `path`              | `String`    | ❌        | Custom path for the short link                               |
-| `androidURL`        | `String`    | ❌        | Fallback URL for Android                                     |
-| `iphoneURL`         | `String`    | ❌        | Fallback URL for iPhone                                      |
-| `createdAt`         | `Int`       | ❌        | Custom creation timestamp                                    |
-| `clicksLimit`       | `Int`       | ❌        | Maximum number of clicks allowed                             |
-| `passwordContact`   | `Bool`      | ❌        | Whether contact details are required for password access     |
-| `skipQS`            | `Bool`      | ❌        | If `true`, skips query string on redirect (default: `false`) |
-| `archived`          | `Bool`      | ❌        | If `true`, archives the short link (default: `false`)        |
-| `splitURL`          | `String`    | ❌        | URL for A/B testing                                          |
-| `splitPercent`      | `Int`       | ❌        | Split percentage for A/B testing                             |
-| `integrationAdroll` | `String`    | ❌        | AdRoll integration token                                     |
-| `integrationFB`     | `String`    | ❌        | Facebook Pixel ID                                            |
-| `integrationGA`     | `String`    | ❌        | Google Analytics ID                                          |
-| `integrationGTM`    | `String`    | ❌        | Google Tag Manager container ID                              |
-| `folderId`          | `String`    | ❌        | ID of the folder where the link should be created            |
+| Parameter           | Type         | Required  | Description                                                  |
+| ------------------- | -----------  | --------  | ------------------------------------------------------------ |
+| `domain`            | `String`     | ✅        | Your Short.io domain (e.g., `example.short.gy`)              |
+| `originalURL`       | `String`     | ✅        | The original URL to be shortened                             |
+| `cloaking`          | `Bool`       | ❌        | If `true`, hides the destination URL from the user           |
+| `password`          | `String`     | ❌        | Password to protect the short link                           |
+| `redirectType`      | `Int`        | ❌        | Type of redirect (e.g., 301, 302)                            |
+| `expiresAt`         | `IntOrString`| ❌        | Expiration timestamp in Unix format                          |
+| `expiredURL`        | `String`     | ❌        | URL to redirect after expiration                             |
+| `title`             | `String`     | ❌        | Custom title for the link                                    |
+| `tags`              | `[String]`   | ❌        | Tags to categorize the link                                  |
+| `utmSource`         | `String`     | ❌        | UTM source parameter                                         |
+| `utmMedium`         | `String`     | ❌        | UTM medium parameter                                         |
+| `utmCampaign`       | `String`     | ❌        | UTM campaign parameter                                       |
+| `utmTerm`           | `String`     | ❌        | UTM term parameter                                           |
+| `utmContent`        | `String`     | ❌        | UTM content parameter                                        |
+| `ttl`               | `IntOrString`| ❌        | Time to live for the short link                              |
+| `path`              | `String`     | ❌        | Custom path for the short link                               |
+| `androidURL`        | `String`     | ❌        | Fallback URL for Android                                     |
+| `iphoneURL`         | `String`     | ❌        | Fallback URL for iPhone                                      |
+| `createdAt`         | `IntOrString`| ❌        | Custom creation timestamp                                    |
+| `clicksLimit`       | `Int`        | ❌        | Maximum number of clicks allowed                             |
+| `passwordContact`   | `Bool`       | ❌        | Whether contact details are required for password access     |
+| `skipQS`            | `Bool`       | ❌        | If `true`, skips query string on redirect (default: `false`) |
+| `archived`          | `Bool`       | ❌        | If `true`, archives the short link (default: `false`)        |
+| `splitURL`          | `String`     | ❌        | URL for A/B testing                                          |
+| `splitPercent`      | `Int`        | ❌        | Split percentage for A/B testing                             |
+| `integrationAdroll` | `String`     | ❌        | AdRoll integration token                                     |
+| `integrationFB`     | `String`     | ❌        | Facebook Pixel ID                                            |
+| `integrationGA`     | `String`     | ❌        | Google Analytics ID                                          |
+| `integrationGTM`    | `String`     | ❌        | Google Tag Manager container ID                              |
+| `folderId`          | `String`     | ❌        | ID of the folder where the link should be created            |
 
 
 ## 🌐 Deep Linking Setup (Universal Links for iOS)

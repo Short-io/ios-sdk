@@ -96,38 +96,38 @@ Task {
 The `ShortIOParameters` struct is used to define the details of the short link you want to create. Below are the available parameters:
 
 
-| Parameter           | Type        | Required  | Description                                                  |
-| ------------------- | ----------- | --------  | ------------------------------------------------------------ |
-| `domain`            | `String`    | ✅        | Your Short.io domain (e.g., `example.short.gy`)              |
-| `originalURL`       | `String`    | ✅        | The original URL to be shortened                             |
-| `cloaking`          | `Bool`      | ❌        | If `true`, hides the destination URL from the user           |
-| `password`          | `String`    | ❌        | Password to protect the short link                           |
-| `redirectType`      | `Int`       | ❌        | Type of redirect (e.g., 301, 302)                            |
-| `expiresAt`         | `Int`       | ❌        | Expiration timestamp in Unix format                          |
-| `expiredURL`        | `String`    | ❌        | URL to redirect after expiration                             |
-| `title`             | `String`    | ❌        | Custom title for the link                                    |
-| `tags`              | `[String]`  | ❌        | Tags to categorize the link                                  |
-| `utmSource`         | `String`    | ❌        | UTM source parameter                                         |
-| `utmMedium`         | `String`    | ❌        | UTM medium parameter                                         |
-| `utmCampaign`       | `String`    | ❌        | UTM campaign parameter                                       |
-| `utmTerm`           | `String`    | ❌        | UTM term parameter                                           |
-| `utmContent`        | `String`    | ❌        | UTM content parameter                                        |
-| `ttl`               | `String`    | ❌        | Time to live for the short link                              |
-| `path`              | `String`    | ❌        | Custom path for the short link                               |
-| `androidURL`        | `String`    | ❌        | Fallback URL for Android                                     |
-| `iphoneURL`         | `String`    | ❌        | Fallback URL for iPhone                                      |
-| `createdAt`         | `Int`       | ❌        | Custom creation timestamp                                    |
-| `clicksLimit`       | `Int`       | ❌        | Maximum number of clicks allowed                             |
-| `passwordContact`   | `Bool`      | ❌        | Whether contact details are required for password access     |
-| `skipQS`            | `Bool`      | ❌        | If `true`, skips query string on redirect (default: `false`) |
-| `archived`          | `Bool`      | ❌        | If `true`, archives the short link (default: `false`)        |
-| `splitURL`          | `String`    | ❌        | URL for A/B testing                                          |
-| `splitPercent`      | `Int`       | ❌        | Split percentage for A/B testing                             |
-| `integrationAdroll` | `String`    | ❌        | AdRoll integration token                                     |
-| `integrationFB`     | `String`    | ❌        | Facebook Pixel ID                                            |
-| `integrationGA`     | `String`    | ❌        | Google Analytics ID                                          |
-| `integrationGTM`    | `String`    | ❌        | Google Tag Manager container ID                              |
-| `folderId`          | `String`    | ❌        | ID of the folder where the link should be created            |
+| Parameter           | Type         | Required  | Description                                                  |
+| ------------------- | -----------  | --------  | ------------------------------------------------------------ |
+| `domain`            | `String`     | ✅        | Your Short.io domain (e.g., `example.short.gy`)              |
+| `originalURL`       | `String`     | ✅        | The original URL to be shortened                             |
+| `cloaking`          | `Bool`       | ❌        | If `true`, hides the destination URL from the user           |
+| `password`          | `String`     | ❌        | Password to protect the short link                           |
+| `redirectType`      | `Int`        | ❌        | Type of redirect (e.g., 301, 302)                            |
+| `expiresAt`         | `IntOrString`| ❌        | Expiration timestamp in Unix format                          |
+| `expiredURL`        | `String`     | ❌        | URL to redirect after expiration                             |
+| `title`             | `String`     | ❌        | Custom title for the link                                    |
+| `tags`              | `[String]`   | ❌        | Tags to categorize the link                                  |
+| `utmSource`         | `String`     | ❌        | UTM source parameter                                         |
+| `utmMedium`         | `String`     | ❌        | UTM medium parameter                                         |
+| `utmCampaign`       | `String`     | ❌        | UTM campaign parameter                                       |
+| `utmTerm`           | `String`     | ❌        | UTM term parameter                                           |
+| `utmContent`        | `String`     | ❌        | UTM content parameter                                        |
+| `ttl`               | `IntOrString`| ❌        | Time to live for the short link                              |
+| `path`              | `String`     | ❌        | Custom path for the short link                               |
+| `androidURL`        | `String`     | ❌        | Fallback URL for Android                                     |
+| `iphoneURL`         | `String`     | ❌        | Fallback URL for iPhone                                      |
+| `createdAt`         | `IntOrString`| ❌        | Custom creation timestamp                                    |
+| `clicksLimit`       | `Int`        | ❌        | Maximum number of clicks allowed                             |
+| `passwordContact`   | `Bool`       | ❌        | Whether contact details are required for password access     |
+| `skipQS`            | `Bool`       | ❌        | If `true`, skips query string on redirect (default: `false`) |
+| `archived`          | `Bool`       | ❌        | If `true`, archives the short link (default: `false`)        |
+| `splitURL`          | `String`     | ❌        | URL for A/B testing                                          |
+| `splitPercent`      | `Int`        | ❌        | Split percentage for A/B testing                             |
+| `integrationAdroll` | `String`     | ❌        | AdRoll integration token                                     |
+| `integrationFB`     | `String`     | ❌        | Facebook Pixel ID                                            |
+| `integrationGA`     | `String`     | ❌        | Google Analytics ID                                          |
+| `integrationGTM`    | `String`     | ❌        | Google Tag Manager container ID                              |
+| `folderId`          | `String`     | ❌        | ID of the folder where the link should be created            |
 
 
 ## 🌐 Deep Linking Setup (Universal Links for iOS)
@@ -145,7 +145,7 @@ To ensure your app can handle deep links created via Short.io, you need to confi
 5. Ensure your **Bundle Identifier** is correctly set.
 6. Click the **+ Capability** button and add **Associated Domains**.
 
-**✅ Tip:** The **Associated Domains** capability will only appear if you have provided a valid **Team** and **Bundle Identifier**.
+    **✅ Tip:** The **Associated Domains** capability will only appear if you have provided a valid **Team** and **Bundle Identifier**.
 
 7. Under Associated Domains, add your Short.io domain in the following format:
 
@@ -170,32 +170,59 @@ ABCDEFGHIJ.com.example.app
 
 ## 🛠️ Handling Universal Links in Your App
 
-To handle Universal Links in your SwiftUI app, use the `onOpenURL` modifier at the entry point of your app to process incoming URLs and navigate to the appropriate views. Below is an example implementation in SwiftUI.
+This guide explains how to handle Universal Links in iOS applications using the SDK's `handleOpen` function. Below are implementation details for both SwiftUI and Storyboard-based projects.
+
+### SwiftUI Project
+
+For SwiftUI apps, use the `onOpenURL` modifier at the entry point of your app to process incoming URLs and navigate to the appropriate views. Below is an example implementation in SwiftUI.
 
 ```swift
 import SwiftUI
+import ShortIOSDK
 
 @main
-struct deeplinkAppApp: App {
+struct YourApp: App {
     
+    let sdk = ShortIOSDK()
     var body: some Scene {
         WindowGroup {
             ContentView()
                 .onOpenURL { url in
-                    handleURL(url)
+                    if let result = sdk.handleOpen(url) {
+                        print("Host: \(result.host), Path: \(result.path)")
+                    }
                 }
         }
     }
+}
 
-    func handleURL(_ url: URL) {
-        // Parse the URL and navigate to the appropriate view based on host or path
-        guard let components = URLComponents(url: url, resolvingAgainstBaseURL: true),
-              let host = components.host,
-              let path = components.path.split(separator: "/").first else {
+```
+
+### Storyboard Project
+
+For Storyboard apps, implement the `scene(_:continue:)` method in your `SceneDelegate` to handle Universal Links. Below is an example implementation in Storyboard.
+
+```swift
+import UIKit
+import ShortIOSDK
+
+class SceneDelegate: UIResponder, UIWindowSceneDelegate {
+    
+    let sdk = ShortIOSDK()
+    
+    func scene(_ scene: UIScene, continue userActivity: NSUserActivity) {
+        guard userActivity.activityType == NSUserActivityTypeBrowsingWeb,
+              let incomingURL = userActivity.webpageURL,
+              let components = sdk.handleOpen(incomingURL) else {
+            print("Invalid universal link or URL components")
             return
         }
-
-        print("Host: \(host), Path: \(path)")
+        print("Host: \(host), Path: \(components.path.split(separator: "/").first)")
     }
 }
 ```
+### Using the `handleOpen` Function
+
+The `handleOpen` function, provided by the SDK, processes a given URL and returns `URLComponents` if the URL is valid. It ensures proper parsing of universal links, checking for a valid scheme and returning all available components for further processing.
+
+You can access properties like `host`, `path`, `queryItems`, or other properties from the returned `URLComponents` to determine the appropriate navigation or action in your app.

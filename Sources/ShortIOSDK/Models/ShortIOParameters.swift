@@ -1,5 +1,19 @@
 import Foundation
 
+public enum IntOrString: Encodable {
+    case int(Int)
+    case string(String)
+    
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        switch self {
+        case .int(let value):
+            try container.encode(value)
+        case .string(let value):
+            try container.encode(value)
+        }
+    }
+}
 
 public struct ShortIOParameters: Encodable {
     public let domain: String
@@ -7,7 +21,7 @@ public struct ShortIOParameters: Encodable {
     public var cloaking: Bool?
     public var password: String?
     public var redirectType: Int?
-    public var expiresAt: Int?
+    public var expiresAt: IntOrString?
     public var expiredURL: String?
     public var title: String?
     public var tags: [String]?
@@ -16,11 +30,11 @@ public struct ShortIOParameters: Encodable {
     public var utmCampaign: String?
     public var utmTerm: String?
     public var utmContent: String?
-    public var ttl: String?
+    public var ttl: IntOrString?
     public var path: String?
     public var androidURL: String?
     public var iphoneURL: String?
-    public var createdAt: Int?
+    public var createdAt: IntOrString?
     public var clicksLimit: Int?
     public var passwordContact: Bool?
     public var skipQS: Bool
@@ -32,14 +46,14 @@ public struct ShortIOParameters: Encodable {
     public var integrationGA: String?
     public var integrationGTM: String?
     public var folderId: String?
-    
+
     public init(
         domain: String,
         originalURL: String,
         cloaking: Bool? = nil,
         password: String? = nil,
         redirectType: Int? = nil,
-        expiresAt: Int? = nil,
+        expiresAt: IntOrString? = nil,
         expiredURL: String? = nil,
         title: String? = nil,
         tags: [String]? = nil,
@@ -48,11 +62,11 @@ public struct ShortIOParameters: Encodable {
         utmCampaign: String? = nil,
         utmTerm: String? = nil,
         utmContent: String? = nil,
-        ttl: String? = nil,
+        ttl: IntOrString? = nil,
         path: String? = nil,
         androidURL: String? = nil,
         iphoneURL: String? = nil,
-        createdAt: Int? = nil,
+        createdAt: IntOrString? = nil,
         clicksLimit: Int? = nil,
         passwordContact: Bool? = nil,
         skipQS: Bool = false,

@@ -189,7 +189,7 @@ struct YourApp: App {
             ContentView()
                 .onOpenURL { url in
                     if let result = sdk.handleOpen(url) {
-                        print("Host: \(result.host), Path: \(result.path.split(separator: "/").first)")
+                        print("Host: \(result.host), Path: \(result.path)")
                     }
                 }
         }

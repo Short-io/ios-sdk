@@ -65,12 +65,15 @@ public class ShortIOSDK {
     }
 
     public func handleOpen(_ url: URL) -> URLComponents? {
+
         guard var components = URLComponents(url: url, resolvingAgainstBaseURL: true) else {
             return nil
         }
+
         guard let scheme = components.scheme, ["http", "https"].contains(scheme) else {
             return nil
         }
+
         guard let path = components.path as? String, !path.isEmpty else {
             return components
         }

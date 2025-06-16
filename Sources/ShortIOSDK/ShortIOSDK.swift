@@ -66,7 +66,7 @@ public class ShortIOSDK {
 
     func handleClick(urlComponents: URLComponents, completion: @escaping (Int?, String?) -> Void) {
         var components = urlComponents
-        // Append or merge `utm_medium=ios`
+
         var queryItems = components.queryItems ?? []
         if !queryItems.contains(where: { $0.name == "utm_medium" }) {
             queryItems.append(URLQueryItem(name: "utm_medium", value: "ios"))
@@ -74,7 +74,7 @@ public class ShortIOSDK {
         components.queryItems = queryItems
         
         guard let url = components.url else {
-            completion(nil, "Invalid URL") // Error case: URL construction failed
+            completion(nil, "Invalid URL")
             return
         }
         
@@ -94,9 +94,9 @@ public class ShortIOSDK {
             
             switch httpResponse.statusCode {
             case 200:
-                completion(200, nil) // Success: status code 200, no error
+                completion(200, nil)
             case 404:
-                completion(nil, "Link is not vald") // Specific error for 404
+                completion(nil, "Link is not vald")
             default:
                 completion(nil, "Unexpected status code: \(httpResponse.statusCode)")
             }
@@ -115,7 +115,6 @@ public class ShortIOSDK {
         handleClick(urlComponents: components) { statusCode, error in
             if statusCode == 200 {
                 print("Short SDK click call completed successfully")
-                // Process path only on success
             } else {
                 print("Error: \(error ?? "Unknown error")")
             }

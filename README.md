@@ -188,8 +188,8 @@ struct YourApp: App {
         WindowGroup {
             ContentView()
                 .onOpenURL { url in
-                    if let result = sdk.handleOpen(url) {
-                        print("Host: \(result.host), Path: \(result.path)")
+                    sdk.handleOpen(url) { result in
+                        print("Host: \(result?.host), Path: \(result?.path)")
                     }
                 }
         }

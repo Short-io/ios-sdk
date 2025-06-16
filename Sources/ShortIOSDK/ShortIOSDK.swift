@@ -64,24 +64,71 @@ public class ShortIOSDK {
         }
     }
 
-    public func handleOpen(_ url: URL) -> URLComponents? {
-
-        guard var components = URLComponents(url: url, resolvingAgainstBaseURL: true) else {
-            return nil
+    func handleClick(urlComponents: URLComponents, completion: @escaping (Int?, String?) -> Void) {
+        var components = urlComponents
+        // Append or merge `utm_medium=ios`
+        var queryItems = components.queryItems ?? []
+        if !queryItems.contains(where: { $0.name == "utm_medium" }) {
+            queryItems.append(URLQueryItem(name: "utm_medium", value: "ios"))
         }
-
-        guard let scheme = components.scheme, ["http", "https"].contains(scheme) else {
-            return nil
-        }
-
-        guard let path = components.path as? String, !path.isEmpty else {
-            return components
+        components.queryItems = queryItems
+        
+        guard let url = components.url else {
+            completion(nil, "Invalid URL") // Error case: URL construction failed
+            return
         }
         
-        if let firstPathComponent = path.split(separator: "/").first {
-            components.path = String(firstPathComponent)
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        
+        URLSession.shared.dataTask(with: request) { _, response, error in
+            if let error = error {
+                completion(nil, "Network error: \(error.localizedDescription)")
+                return
+            }
+            
+            guard let httpResponse = response as? HTTPURLResponse else {
+                completion(nil, "Invalid server response")
+                return
+            }
+            
+            switch httpResponse.statusCode {
+            case 200:
+                completion(200, nil) // Success: status code 200, no error
+            case 404:
+                completion(nil, "Link is not vald") // Specific error for 404
+            default:
+                completion(nil, "Unexpected status code: \(httpResponse.statusCode)")
+            }
+        }.resume()
+    }
+    
+    public func handleOpen(_ url: URL, completion: @escaping (URLComponents?) -> Void) {
+
+        guard var components = URLComponents(url: url, resolvingAgainstBaseURL: true),
+        let scheme = components.scheme,
+        ["http", "https"].contains(scheme) else {
+            completion(nil)
+            return
         }
-        return components
+        
+        handleClick(urlComponents: components) { statusCode, error in
+            if statusCode == 200 {
+                print("Short SDK click call completed successfully")
+                // Process path only on success
+            } else {
+                print("Error: \(error ?? "Unknown error")")
+            }
+            guard let path = components.path as? String, !path.isEmpty else {
+                completion(components)
+                return
+            }
+            
+            if let firstPathComponent = path.split(separator: "/").first {
+                components.path = "\(firstPathComponent)" // Ensure path starts with "/"
+            }
+            completion(components)
+        }
     }
 }
 

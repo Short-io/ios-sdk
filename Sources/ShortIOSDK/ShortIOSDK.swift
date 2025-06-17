@@ -63,6 +63,72 @@ public class ShortIOSDK {
             throw error
         }
     }
+
+    func handleClick(urlComponents: URLComponents, completion: @escaping (Int?, String?) -> Void) {
+        var components = urlComponents
+
+        var queryItems = components.queryItems ?? []
+        if !queryItems.contains(where: { $0.name == "utm_medium" }) {
+            queryItems.append(URLQueryItem(name: "utm_medium", value: "ios"))
+        }
+        components.queryItems = queryItems
+        
+        guard let url = components.url else {
+            completion(nil, "Invalid URL")
+            return
+        }
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        
+        URLSession.shared.dataTask(with: request) { _, response, error in
+            if let error = error {
+                completion(nil, "Network error: \(error.localizedDescription)")
+                return
+            }
+            
+            guard let httpResponse = response as? HTTPURLResponse else {
+                completion(nil, "Invalid server response")
+                return
+            }
+            
+            switch httpResponse.statusCode {
+            case 200:
+                completion(200, nil)
+            case 404:
+                completion(nil, "Link is not vald")
+            default:
+                completion(nil, "Unexpected status code: \(httpResponse.statusCode)")
+            }
+        }.resume()
+    }
+    
+    public func handleOpen(_ url: URL, completion: @escaping (URLComponents?) -> Void) {
+
+        guard var components = URLComponents(url: url, resolvingAgainstBaseURL: true),
+        let scheme = components.scheme,
+        ["http", "https"].contains(scheme) else {
+            completion(nil)
+            return
+        }
+        
+        handleClick(urlComponents: components) { statusCode, error in
+            if statusCode == 200 {
+                print("Short SDK click call completed successfully")
+            } else {
+                print("Error: \(error ?? "Unknown error")")
+            }
+            guard let path = components.path as? String, !path.isEmpty else {
+                completion(components)
+                return
+            }
+            
+            if let firstPathComponent = path.split(separator: "/").first {
+                components.path = "\(firstPathComponent)" // Ensure path starts with "/"
+            }
+            completion(components)
+        }
+    }
 }
 
 // MARK: - Result Type

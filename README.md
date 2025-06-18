@@ -208,16 +208,17 @@ import ShortIOSDK
 
 class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     
-    let sdk = ShortIOSDK()
+    private let sdk = ShortIOSDK()
     
     func scene(_ scene: UIScene, continue userActivity: NSUserActivity) {
         guard userActivity.activityType == NSUserActivityTypeBrowsingWeb,
-              let incomingURL = userActivity.webpageURL,
-              let components = sdk.handleOpen(incomingURL) else {
+              let incomingURL = userActivity.webpageURL else {
             print("Invalid universal link or URL components")
             return
         }
-        print("Host: \(host), Path: \(components.path.split(separator: "/").first)")
+        sdk.handleOpen(incomingURL) { result in
+            print("Host: \(result?.host), Path: \(result?.path)")
+        }
     }
 }
 ```

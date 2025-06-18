@@ -208,7 +208,7 @@ import ShortIOSDK
 
 class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     
-    var sdk = ShortIOSDK()
+    private let sdk = ShortIOSDK()
     
     func scene(_ scene: UIScene, continue userActivity: NSUserActivity) {
         guard userActivity.activityType == NSUserActivityTypeBrowsingWeb,

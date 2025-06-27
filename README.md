@@ -227,3 +227,36 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
 The `handleOpen` function, provided by the SDK, processes a given URL and returns `URLComponents` if the URL is valid. It ensures proper parsing of universal links, checking for a valid scheme and returning all available components for further processing.
 
 You can access properties like `host`, `path`, `queryItems`, or other properties from the returned `URLComponents` to determine the appropriate navigation or action in your app.
+
+## 🔐 Secure Short Link
+
+If you want to encrypt the original URL before shortening it. For privacy or security reasons — the SDK provides a utility function called `createSecure`. This function encrypts the original URL using AES-GCM and returns a secured URL with a separate decryption key.
+
+```swift
+import ShortIOSDK
+
+Task {
+    do {
+        let result = try shortLinkSDK.createSecure(originalURL: "your_original_URL")
+        secureShortURL = result.securedOriginalURL
+        print("result", result.securedOriginalURL, result.securedShortUrl)
+    } catch {
+        print("Failed to create secure URL: \(error)")
+    }
+}
+```
+
+## 🔒 Output Format
+
+- `securedOriginalURL` – A URL in the format:
+
+```pgsql
+shortsecure://<Base64 encrypted URL>?<Base64 IV>
+```
+
+- `securedShortUrl` – A fragment (like `#<Base64 key>`) that must be appended manually to the final short URL for decryption.
+
+## 📌 Note:
+
+- The decryption key (`securedShortUrl`) must be retained or shared securely with the recipient.
+- On the client-side, you can later decrypt the original URL using the IV and key from the short link.

@@ -1,4 +1,5 @@
 import Foundation
+import CryptoKit
 
 public class ShortIOSDK {
     private let session: URLSession
@@ -63,7 +64,39 @@ public class ShortIOSDK {
             throw error
         }
     }
-
+    
+    @available(macOS 12.0, iOS 15.0, *)
+    public func createSecure(originalURL: String) throws -> (securedOriginalURL: String, securedShortUrl: String) {
+        do {
+            // Generate a 128-bit AES-GCM key
+            let key = SymmetricKey(size: .bits128)
+            
+            // Generate a 12-byte nonce (IV)
+            let nonce = AES.GCM.Nonce()
+            
+            // Encrypt the original URL
+            let urlData = originalURL.data(using: .utf8)!
+            let sealedBox = try AES.GCM.seal(urlData, using: key, nonce: nonce)
+            
+            // Encode encrypted data and nonce to Base64
+            let encryptedUrlBase64 = sealedBox.ciphertext.base64EncodedString()
+            let nonceBase64 = sealedBox.nonce.withUnsafeBytes { Data($0).base64EncodedString() }
+            
+            // Construct secured URL
+            let securedOriginalURL = "shortsecure://\(encryptedUrlBase64)?\(nonceBase64)"
+            
+            // Export key as Base64
+            let keyData = key.withUnsafeBytes { Data($0) }
+            let keyBase64 = keyData.base64EncodedString()
+            let securedShortUrl = "#\(keyBase64)"
+            
+            return (securedOriginalURL, securedShortUrl)
+        } catch {
+            print("Encryption error: \(error)")
+            throw error
+        }
+    }
+    
     func handleClick(urlComponents: URLComponents, completion: @escaping (Int?, String?) -> Void) {
         var components = urlComponents
 

@@ -238,7 +238,6 @@ import ShortIOSDK
 Task {
     do {
         let result = try shortLinkSDK.createSecure(originalURL: "your_original_URL")
-        secureShortURL = result.securedOriginalURL
         print("result", result.securedOriginalURL, result.securedShortUrl)
     } catch {
         print("Failed to create secure URL: \(error)")

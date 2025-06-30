@@ -75,7 +75,9 @@ public class ShortIOSDK {
             let nonce = AES.GCM.Nonce()
             
             // Encrypt the original URL
-            let urlData = originalURL.data(using: .utf8)!
+            guard let urlData = originalURL.data(using: .utf8) else {
+                throw ShortIOError.invalidURL
+            }
             let sealedBox = try AES.GCM.seal(urlData, using: key, nonce: nonce)
             
             // Encode encrypted data and nonce to Base64
@@ -182,7 +184,7 @@ extension ShortIOError: LocalizedError {
     public var errorDescription: String? {
         switch self {
         case .invalidURL:
-            return "Invalid API endpoint URL"
+            return "Invalid URL"
         case .invalidResponse:
             return "Received malformed server response"
         }

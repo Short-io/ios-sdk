@@ -65,7 +65,7 @@ let sdk = ShortIOSDK()
 
 let parameters = ShortIOParameters(
     domain: "your_domain", // Replace with your Short.io domain
-    originalURL: "your_originalURL"// Replace with your Short.io domain
+    originalURL: "https://{your_domain}"// Replace with your Short.io domain
 )
 ```
 **Note**: Both `domain` and `originalURL` are the required parameters. You can also pass optional parameters such as `path`, `title`, `utmParameters`, etc.
@@ -138,7 +138,7 @@ import ShortIOSDK
 
 Task {
     do {
-        let result = try shortLinkSDK.createSecure(originalURL: "https://{your_domain}.short.gy")
+        let result = try shortLinkSDK.createSecure(originalURL: "https://{your_domain}")
         print("result", result.securedOriginalURL, result.securedShortUrl)
     } catch {
         print("Failed to create secure URL: \(error)")
@@ -163,7 +163,7 @@ Track conversions for your short links to measure campaign effectiveness. The SD
 ```swift
 Task {
     do {
-        let result = try await shortLinkSDK.trackConversion(originalURL: "https://{your_domain}.short.gy", clid: "your_clid", conversionId: "your_conversionID")
+        let result = try await shortLinkSDK.trackConversion(originalURL: "https://{your_domain}", clid: "your_clid", conversionId: "your_conversionID")
         print("result", result)
     } catch {
         print("Failed to track conversion: \(error)")

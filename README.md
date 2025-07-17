@@ -65,7 +65,7 @@ let sdk = ShortIOSDK()
 
 let parameters = ShortIOParameters(
     domain: "your_domain", // Replace with your Short.io domain
-    originalURL: "your_originalURL"// Replace with your Short.io domain
+    originalURL: "https://{your_domain}"// Replace with your Short.io domain
 )
 ```
 **Note**: Both `domain` and `originalURL` are the required parameters. You can also pass optional parameters such as `path`, `title`, `utmParameters`, etc.
@@ -129,6 +129,47 @@ The `ShortIOParameters` struct is used to define the details of the short link y
 | `integrationGTM`    | `String`     | ❌        | Google Tag Manager container ID                              |
 | `folderId`          | `String`     | ❌        | ID of the folder where the link should be created            |
 
+## 🔐 Secure Short Link
+
+If you want to encrypt the original URL before shortening it. For privacy or security reasons — the SDK provides a utility function called `createSecure`. This function encrypts the original URL using AES-GCM and returns a secured URL with a separate decryption key.
+
+```swift
+import ShortIOSDK
+
+Task {
+    do {
+        let result = try shortLinkSDK.createSecure(originalURL: "https://{your_domain}")
+        print("result", result.securedOriginalURL, result.securedShortUrl)
+    } catch {
+        print("Failed to create secure URL: \(error)")
+    }
+}
+```
+
+### 🔒 Output Format
+
+- `securedOriginalURL` – A URL in the format:
+
+```pgsql
+shortsecure://<Base64 encrypted URL>?<Base64 IV>
+```
+
+- `securedShortUrl` – A fragment (like `#<Base64 key>`) that must be appended manually to the final short URL for decryption.
+
+## 🔄 Conversion Tracking
+
+Track conversions for your short links to measure campaign effectiveness. The SDK provides a simple method to record conversions.
+
+```swift
+Task {
+    do {
+        let result = try await shortLinkSDK.trackConversion(originalURL: "https://{your_domain}", clid: "your_clid", conversionId: "your_conversionID")
+        print("result", result)
+    } catch {
+        print("Failed to track conversion: \(error)")
+    }
+}
+```
 
 ## 🌐 Deep Linking Setup (Universal Links for iOS)
 
@@ -188,8 +229,8 @@ struct YourApp: App {
         WindowGroup {
             ContentView()
                 .onOpenURL { url in
-                    sdk.handleOpen(url) { result in
-                        print("Host: \(result?.host), Path: \(result?.path)")
+                    sdk.handleOpen(url) { result, error in
+                        print("Host: \(result?.host), Path: \(result?.path)", "QueryParams: \(result?.queryItems)")
                     }
                 }
         }
@@ -216,8 +257,8 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
             print("Invalid universal link or URL components")
             return
         }
-        sdk.handleOpen(incomingURL) { result in
-            print("Host: \(result?.host), Path: \(result?.path)")
+        sdk.handleOpen(incomingURL) { result, error in
+            print("Host: \(result?.host), Path: \(result?.path)", "QueryParams: \(result?.queryItems)")
         }
     }
 }

@@ -98,36 +98,6 @@ public class ShortIOSDK {
         }
     }
 
-    @available(macOS 12.0, iOS 15.0, *)
-    public func trackConversion(originalURL: String, clid: String, conversionId: String) async throws -> Bool {
-
-        // Create the base URL by removing trailing slash if exists
-        let baseURL = originalURL.hasSuffix("/") ? String(originalURL.dropLast()) : originalURL
-
-        // Construct the conversion path with clid parameter
-        let conversionURLString = "\(baseURL)/.shortio/conversion?c=\(conversionId)&clid=\(clid)"
-
-        guard let url = URL(string: conversionURLString) else {
-            print("Invalid URL constructed: \(conversionURLString)")
-            return false
-        }
-
-        do {
-            let (data, response) = try await URLSession.shared.data(from: url)
-
-            guard let httpResponse = response as? HTTPURLResponse else {
-                print("Invalid response type")
-                return false
-            }
-
-            // Return true only for successful status codes (typically 200-299)
-            return (200...299).contains(httpResponse.statusCode)
-
-        } catch {
-            throw error
-        }
-    }
-
     func handleClick(urlComponents: URLComponents, completion: @escaping (URLComponents?, String?) -> Void) {
         var components = urlComponents
 
@@ -184,23 +154,25 @@ public class ShortIOSDK {
         }.resume()
     }
 
-    public func handleOpen(_ url: URL, completion: @escaping (URLComponents?, String?) -> Void) {
+    @available(iOS 13.0.0, *)
+    public func handleOpen(_ url: URL,completion: @escaping (_ components: URLComponents?,_ redirectedURL: String?, _ error: String?) -> Void) async {
         guard var components = URLComponents(url: url, resolvingAgainstBaseURL: true),
               let scheme = components.scheme,
               ["http", "https"].contains(scheme) else {
-            completion(nil, "Invalid URL scheme")
+            completion(nil, nil, "Invalid URL scheme")
             return
         }
 
+        let destinationURL = await handleConversionTracking(url: url)
+
         handleClick(urlComponents: components) { modifiedComponents, error in
             if let error = error {
-                // Return original URL in case of error
-                completion(components, error)
+                completion(components, destinationURL, error)
                 return
             }
 
             guard let resultComponents = modifiedComponents else {
-                completion(components, "Unknown error occurred")
+                completion(components, destinationURL, "Unknown error occurred")
                 return
             }
 
@@ -208,13 +180,44 @@ public class ShortIOSDK {
             if let firstPathComponent = resultComponents.path.split(separator: "/").first {
                 var finalComponents = resultComponents
                 finalComponents.path = "\(firstPathComponent)"
-                completion(finalComponents, nil)
+                completion(finalComponents, destinationURL, nil)
             } else {
-                completion(resultComponents, nil)
+                completion(resultComponents, destinationURL, nil)
             }
         }
     }
+
+
+    @available(iOS 13.0.0, *)
+    public func handleConversionTracking(url: URL) async -> String? {
+        let originalURLString = url.absoluteString
+        do {
+            if let redirectedURLString = try await ConversionTrackingMethods.fetchHeaderValue(from: originalURLString),
+               let redirectedURL = URL(string: redirectedURLString),
+               let components = URLComponents(url: redirectedURL, resolvingAgainstBaseURL: false),
+               let clid = components.queryItems?.first(where: { $0.name == "clid" })?.value {
+
+                print("clid =", clid)
+                print("Redirected URL: \(redirectedURLString)")
+
+                ConversionTrackingMethods.trackConversion(
+                    originalURL: originalURLString,
+                    clid: clid
+                )
+
+                return redirectedURLString
+            } else {
+                print("Failed to extract clid or redirect URL")
+                return nil
+            }
+        } catch {
+            print("Error: \(error)")
+            return nil
+        }
+    }
+
 }
+
 
 // MARK: - Result Type
 /// Result type for Short.io API operations
@@ -240,4 +243,93 @@ extension ShortIOError: LocalizedError {
             return "Received malformed server response"
         }
     }
+}
+
+public enum ConversionTrackingMethods {
+    @available(iOS 13.0.0, *)
+    static func fetchHeaderValue(from urlString: String) async throws -> String? {
+        guard let url = URL(string: urlString) else {
+            print("Invalid input URL: \(urlString)")
+            return nil
+        }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "HEAD"
+
+        do {
+            let (_, response) = try await URLSession.shared.data(for: request)
+
+            guard let httpResponse = response as? HTTPURLResponse else {
+                print("Failed to cast response to HTTPURLResponse")
+                return nil
+            }
+            
+            print("Response Headers:")
+            for (key, value) in httpResponse.allHeaderFields {
+                print("  \(key): \(value)")
+            }
+
+            guard let redirectedURL = httpResponse.url else {
+                print("No redirection occurred. Returning original URL.")
+                return url.absoluteString
+            }
+
+            return redirectedURL.absoluteString
+        } catch {
+            print("Network error: \(error.localizedDescription)")
+            return nil
+        }
+    }
+
+    
+    @available(iOS 13.0.0, *)
+    static func trackConversion(originalURL: String, clid: String?) {
+        Task.detached {
+            let originalURLString =
+                originalURL.hasSuffix("/") ? String(originalURL.dropLast()) : originalURL
+            guard let baseURL = URL(string: originalURLString),
+                let host = baseURL.host,
+                let scheme = baseURL.scheme
+            else {
+                print("Invalid base URL: \(originalURL)")
+                return
+            }
+
+            var components = URLComponents()
+            components.scheme = scheme
+            components.host = host
+            components.path = "/.shortio/conversion"
+
+            var queryItems = [URLQueryItem]()
+            if let clid = clid {
+                queryItems.append(URLQueryItem(name: "clid", value: clid))
+            }
+            components.queryItems = queryItems
+
+            guard let url = components.url else {
+                print("Failed to construct conversion URL")
+                return
+            }
+
+            print("Sending conversion request to: \(url)")
+
+            var request = URLRequest(url: url)
+            request.httpMethod = "GET"
+
+            do {
+                let (_, response) = try await URLSession.shared.data(for: request)
+                guard let httpResponse = response as? HTTPURLResponse else {
+                    print("Invalid response type")
+                    return
+                }
+
+                print("Response status code: \(httpResponse.statusCode)")
+                let success = (200...299).contains(httpResponse.statusCode)
+                print("Conversion tracking success: \(success)")
+            } catch {
+                print("Request failed: \(error.localizedDescription)")
+            }
+        }
+    }
+
 }

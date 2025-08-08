@@ -156,21 +156,6 @@ shortsecure://<Base64 encrypted URL>?<Base64 IV>
 
 - `securedShortUrl` – A fragment (like `#<Base64 key>`) that must be appended manually to the final short URL for decryption.
 
-## 🔄 Conversion Tracking
-
-Track conversions for your short links to measure campaign effectiveness. The SDK provides a simple method to record conversions.
-
-```swift
-Task {
-    do {
-        let result = try await shortLinkSDK.trackConversion(originalURL: "https://{your_domain}", clid: "your_clid", conversionId: "your_conversionID")
-        print("result", result)
-    } catch {
-        print("Failed to track conversion: \(error)")
-    }
-}
-```
-
 ## 🌐 Deep Linking Setup (Universal Links for iOS)
 
 To ensure your app can handle deep links created via Short.io, you need to configure Universal Links properly using **Associated Domains** in your Xcode project.

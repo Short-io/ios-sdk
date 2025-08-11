@@ -155,7 +155,7 @@ public class ShortIOSDK {
     }
 
     @available(iOS 13.0.0, *)
-    public func handleOpen(_ url: URL,completion: @escaping (_ components: URLComponents?,_ redirectedURL: String?, _ error: String?) -> Void) async {
+    public func handleOpen(_ url: URL, completion: @escaping (_ components: URLComponents?, _ redirectedURL: String?, _ error: String?) -> Void) async {
         guard var components = URLComponents(url: url, resolvingAgainstBaseURL: true),
               let scheme = components.scheme,
               ["http", "https"].contains(scheme) else {
@@ -196,9 +196,6 @@ public class ShortIOSDK {
                let redirectedURL = URL(string: redirectedURLString),
                let components = URLComponents(url: redirectedURL, resolvingAgainstBaseURL: false),
                let clid = components.queryItems?.first(where: { $0.name == "clid" })?.value {
-
-                print("clid =", clid)
-                print("Redirected URL: \(redirectedURLString)")
 
                 ConversionTrackingMethods.trackConversion(
                     originalURL: originalURLString,
@@ -245,7 +242,7 @@ extension ShortIOError: LocalizedError {
     }
 }
 
-public enum ConversionTrackingMethods {
+struct ConversionTrackingMethods {
     @available(iOS 13.0.0, *)
     static func fetchHeaderValue(from urlString: String) async throws -> String? {
         guard let url = URL(string: urlString) else {
@@ -284,7 +281,7 @@ public enum ConversionTrackingMethods {
     
     @available(iOS 13.0.0, *)
     static func trackConversion(originalURL: String, clid: String?) {
-        Task.detached {
+        Task {
             let originalURLString =
                 originalURL.hasSuffix("/") ? String(originalURL.dropLast()) : originalURL
             guard let baseURL = URL(string: originalURLString),
@@ -310,8 +307,6 @@ public enum ConversionTrackingMethods {
                 print("Failed to construct conversion URL")
                 return
             }
-
-            print("Sending conversion request to: \(url)")
 
             var request = URLRequest(url: url)
             request.httpMethod = "GET"

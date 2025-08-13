@@ -68,8 +68,6 @@ public class ShortIOSDK {
 
         var finalApiKey = apiKey != nil ? apiKey : self.apiKey
 
-        print("finalApiKey", finalApiKey, finalParameters)
-
         request.httpMethod = "POST"
         request.addValue("application/json", forHTTPHeaderField: "Accept")
         request.addValue("application/json", forHTTPHeaderField: "Content-Type")

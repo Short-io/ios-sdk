@@ -16,7 +16,7 @@ public enum IntOrString: Encodable {
 }
 
 public struct ShortIOParameters: Encodable {
-    public let domain: String
+    public var domain: String?
     public let originalURL: String
     public var cloaking: Bool?
     public var password: String?
@@ -48,7 +48,7 @@ public struct ShortIOParameters: Encodable {
     public var folderId: String?
 
     public init(
-        domain: String,
+        domain: String? = nil,
         originalURL: String,
         cloaking: Bool? = nil,
         password: String? = nil,

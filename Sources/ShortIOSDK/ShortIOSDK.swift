@@ -2,12 +2,42 @@ import Foundation
 import CryptoKit
 
 public class ShortIOSDK {
-    private let session: URLSession
+    @MainActor public static let shared = ShortIOSDK()
 
-    /// Initialize with a custom URLSession (defaults to shared session)
-    public init(session: URLSession = .shared) {
-        self.session = session
+    // MARK: - Private Properties
+    private var session: URLSession
+    private var isInitialized = false
+    private var apiKey: String = ""
+    private var domain: String = ""
+
+    // MARK: - Private Initializer
+    private init() {
+        self.session = .shared
     }
+
+    // MARK: - Public Initialization
+    /// Initialize the SDK with required API key and domain
+    /// - Parameters:
+    ///   - apiKey: Authentication key for Short.io API
+    ///   - domain: Short.io domain to use for link creation
+    ///   - session: Custom URLSession (defaults to shared session)
+    /// - Note: This method should be called once before using any SDK functionality
+    public func initialize(session: URLSession = .shared, apiKey: String, domain: String) {
+        if !isInitialized {
+            self.session = session
+            self.apiKey = apiKey
+            self.domain = domain
+            self.isInitialized = true
+        } else {
+            print("SDK is already initialized.")
+            return
+        }
+    }
+
+    //    @available(*, deprecated, message: "Use instance apiKey instead")
+    //    public struct DeprecatedAPIKey {
+    //        let value: String
+    //    }
 
     /// Creates a shortened link using Short.io API
     /// - Parameters:
@@ -15,9 +45,10 @@ public class ShortIOSDK {
     ///   - apiKey: Authentication key for Short.io API
     /// - Returns: Result containing either success response or error
     @available(macOS 12.0, iOS 15.0, *)
+
     public func createShortLink(
         parameters: ShortIOParameters,
-        apiKey: String
+        apiKey: String? = nil
     ) async throws -> ShortIOResult {
 
         // Safely construct API endpoint URL
@@ -30,14 +61,23 @@ public class ShortIOSDK {
             url: url,
             timeoutInterval: Constants.requestTimeout
         )
+
+        var finalParameters = parameters
+
+        finalParameters.domain = parameters.domain != nil ? parameters.domain : self.domain
+
+        var finalApiKey = apiKey != nil ? apiKey : self.apiKey
+
+        print("finalApiKey", finalApiKey, finalParameters)
+
         request.httpMethod = "POST"
         request.addValue("application/json", forHTTPHeaderField: "Accept")
         request.addValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.addValue(apiKey, forHTTPHeaderField: "Authorization")
+        request.addValue(finalApiKey ?? "", forHTTPHeaderField: "Authorization")
 
         do {
             // Encode request parameters
-            request.httpBody = try JSONEncoder().encode(parameters)
+            request.httpBody = try JSONEncoder().encode(finalParameters)
 
             // Execute network request
             let (data, response) = try await session.data(for: request)
@@ -67,6 +107,7 @@ public class ShortIOSDK {
 
     @available(macOS 12.0, iOS 15.0, *)
     public func createSecure(originalURL: String) throws -> (securedOriginalURL: String, securedShortUrl: String) {
+
         do {
             // Generate a 128-bit AES-GCM key
             let key = SymmetricKey(size: .bits128)
@@ -99,13 +140,19 @@ public class ShortIOSDK {
     }
 
     @available(macOS 12.0, iOS 15.0, *)
-    public func trackConversion(originalURL: String, clid: String, conversionId: String) async throws -> Bool {
+    public func trackConversion(clid: String, domain: String? = nil, conversionId: String? = nil) async throws -> Bool {
 
         // Create the base URL by removing trailing slash if exists
-        let baseURL = originalURL.hasSuffix("/") ? String(originalURL.dropLast()) : originalURL
+        let finalDomain = (domain ?? self.domain)?.trimmingCharacters(in: ["/"]) ?? ""
+
+        let finalClid = clid ?? ""
 
         // Construct the conversion path with clid parameter
-        let conversionURLString = "\(baseURL)/.shortio/conversion?c=\(conversionId)&clid=\(clid)"
+        var conversionURLString = "https://\(finalDomain)/.shortio/conversion?clid=\(finalClid)"
+
+        if let conversionId = conversionId {
+            conversionURLString += "&c=\(conversionId)"
+        }
 
         guard let url = URL(string: conversionURLString) else {
             print("Invalid URL constructed: \(conversionURLString)")
@@ -113,7 +160,7 @@ public class ShortIOSDK {
         }
 
         do {
-            let (data, response) = try await URLSession.shared.data(from: url)
+            let (data, response) = try await session.data(from: url)
 
             guard let httpResponse = response as? HTTPURLResponse else {
                 print("Invalid response type")
@@ -128,90 +175,16 @@ public class ShortIOSDK {
         }
     }
 
-    func handleClick(urlComponents: URLComponents, completion: @escaping (URLComponents?, String?) -> Void) {
-        var components = urlComponents
+    @MainActor
+    public func handleOpen(_ url: URL, completion: @escaping URLHandlerCompletion) {
+        // Validation
+        do {
+            var handler = URLHandler.shared
+            let components = try handler.createURLComponents(from: url)
 
-        // Add utm_medium=ios parameter
-        var queryItems = components.queryItems ?? []
-        if !queryItems.contains(where: { $0.name == "utm_medium" }) {
-            queryItems.append(URLQueryItem(name: "utm_medium", value: "ios"))
-        }
-        components.queryItems = queryItems
-
-        guard let url = components.url else {
-            completion(nil, "Invalid URL")
-            return
-        }
-
-        var request = URLRequest(url: url)
-        request.httpMethod = "GET"
-
-        URLSession.shared.dataTask(with: request) { _, response, error in
-            if let error = error {
-                // Return original URL without utm_medium in case of error
-                completion(urlComponents, "Network error: \(error.localizedDescription)")
-                return
-            }
-
-            guard let httpResponse = response as? HTTPURLResponse else {
-                completion(urlComponents, "Invalid server response")
-                return
-            }
-
-            var resultComponents = urlComponents
-
-            // Check for clid in headers
-            print("Short SDK click call completed successfully")
-            if let clid = httpResponse.allHeaderFields["Clid"] as? String {
-                // Remove utm_medium and add clid parameter
-                var newQueryItems = resultComponents.queryItems ?? []
-                newQueryItems.removeAll(where: { $0.name == "utm_medium" })
-                newQueryItems.append(URLQueryItem(name: "clid", value: clid))
-                resultComponents.queryItems = newQueryItems
-            } else {
-                // Keep the original URL (without utm_medium) if no clid found
-                resultComponents = urlComponents
-            }
-
-            switch httpResponse.statusCode {
-            case 200:
-                completion(resultComponents, nil) // Success
-            case 404:
-                completion(urlComponents, "Link is not valid") // Specific error for 404
-            default:
-                completion(urlComponents, "Unexpected status code: \(httpResponse.statusCode)")
-            }
-        }.resume()
-    }
-
-    public func handleOpen(_ url: URL, completion: @escaping (URLComponents?, String?) -> Void) {
-        guard var components = URLComponents(url: url, resolvingAgainstBaseURL: true),
-              let scheme = components.scheme,
-              ["http", "https"].contains(scheme) else {
-            completion(nil, "Invalid URL scheme")
-            return
-        }
-
-        handleClick(urlComponents: components) { modifiedComponents, error in
-            if let error = error {
-                // Return original URL in case of error
-                completion(components, error)
-                return
-            }
-
-            guard let resultComponents = modifiedComponents else {
-                completion(components, "Unknown error occurred")
-                return
-            }
-
-            // Process path if needed
-            if let firstPathComponent = resultComponents.path.split(separator: "/").first {
-                var finalComponents = resultComponents
-                finalComponents.path = "\(firstPathComponent)"
-                completion(finalComponents, nil)
-            } else {
-                completion(resultComponents, nil)
-            }
+            handler.handleClick(urlComponents: components, completion: completion)
+        } catch {
+            completion(.failure(error as! URLHandlerError))
         }
     }
 }

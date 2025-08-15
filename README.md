@@ -8,6 +8,8 @@ This SDK allows you to create short links using the [Short.io](https://short.io/
 - Generate short links via Short.io API
 - Customize short links using parameters
 - Integrate iOS Universal Links (Deep Linking)
+- Singleton-based API access for simplified usage
+- AES-encrypted secure short link support
 - Simple and clean API for developers
 
 
@@ -46,7 +48,7 @@ If you prefer to install the SDK manually:
 ## 🔑 Getting Started
 
 
-### Step 1: Get Public API Key from Short.io
+### Get Public API Key from Short.io
 
 1. Visit [Short.io](https://short.io/) and **sign up** or **log in** to your account.
 3. In the dashboard, navigate to **Integrations & API**.
@@ -56,19 +58,46 @@ If you prefer to install the SDK manually:
 
 ## 🔗 SDK Usage
 
+### Initialize the SDK
+
+Before using any functionality, you must initialize the SDK using your API key and domain in `AppDelegate` as part of application(launchOptions) for a UIKit app, or the @main initialization logic for a SwiftUI app.
+
+
+
+```swift
+...
+import ShortIOSDK
+...
+
+class AppDelegate: UIResponder, UIApplicationDelegate {
+  ...
+  func application(...) {
+    ...
+    let sdk = ShortIOSDK.shared
+
+    sdk.initialize(apiKey: "your_apiKey_here", domain: "your_domain_here")
+    ...
+  }
+  ...
+}
+```
+
+**Note:** Both `apiKey` and `domain` are the required parameters.
+
+### 🔹 Create a Short Link
 ```swift
 import ShortIOSDK
 
-
-
-let sdk = ShortIOSDK()
+let sdk = ShortIOSDK.shared
 
 let parameters = ShortIOParameters(
     domain: "your_domain", // Replace with your Short.io domain
     originalURL: "https://{your_domain}"// Replace with your Short.io domain
 )
 ```
-**Note**: Both `domain` and `originalURL` are the required parameters. You can also pass optional parameters such as `path`, `title`, `utmParameters`, etc.
+**Note**: The `originalURL` are the required parameter. You can also pass optional parameters such as `path`, `title`, `utmParameters`, etc.
+
+- `domain` parameter is deprecated. Use the instance's configured API key instead. Call initialize(apiKey:domain:) before using this method.
 
 ``` swift
 let apiKey = "your_public_apiKey" // Replace with your Short.io Public API Key
@@ -90,6 +119,7 @@ Task {
     }
 }
 ```
+**⚠️ Note**: The `apiKey` parameter is deprecated. Use the instance's configured API key instead. Call initialize(apiKey:domain:) before using this method.
 
 ## 📄 API Parameters
 
@@ -98,7 +128,7 @@ The `ShortIOParameters` struct is used to define the details of the short link y
 
 | Parameter           | Type         | Required  | Description                                                  |
 | ------------------- | -----------  | --------  | ------------------------------------------------------------ |
-| `domain`            | `String`     | ✅        | Your Short.io domain (e.g., `example.short.gy`)              |
+| `domain`            | `String`     | ✅ (Deprecated)        | ⚠️ Deprecated. No longer required — inferred from API key. May be removed in future versions.             |
 | `originalURL`       | `String`     | ✅        | The original URL to be shortened                             |
 | `cloaking`          | `Bool`       | ❌        | If `true`, hides the destination URL from the user           |
 | `password`          | `String`     | ❌        | Password to protect the short link                           |
@@ -136,9 +166,11 @@ If you want to encrypt the original URL before shortening it. For privacy or sec
 ```swift
 import ShortIOSDK
 
+let sdk = ShortIOSDK.shared
+
 Task {
     do {
-        let result = try shortLinkSDK.createSecure(originalURL: "https://{your_domain}")
+        let result = try sdk.createSecure(originalURL: "your_originalURL_here")
         print("result", result.securedOriginalURL, result.securedShortUrl)
     } catch {
         print("Failed to create secure URL: \(error)")
@@ -161,15 +193,26 @@ shortsecure://<Base64 encrypted URL>?<Base64 IV>
 Track conversions for your short links to measure campaign effectiveness. The SDK provides a simple method to record conversions.
 
 ```swift
+import ShortIOSDK
+
+let sdk = ShortIOSDK.shared
+
 Task {
     do {
-        let result = try await shortLinkSDK.trackConversion(originalURL: "https://{your_domain}", clid: "your_clid", conversionId: "your_conversionID")
+        let result = try await sdk.trackConversion(
+            domain: "your_domain", // ⚠️ Deprecated (optional):
+            clid: "your_clid", // ⚠️ Deprecated (optional):
+            conversionId: "your_conversionID" (optional)
+        )
         print("result", result)
     } catch {
         print("Failed to track conversion: \(error)")
     }
 }
 ```
+
+**⚠️ Note:** All three parameters — `domain`, `clid`, and `conversionId` — are optional.
+- `domain` and `clid` are deprecated and may be removed in future versions.
 
 ## 🌐 Deep Linking Setup (Universal Links for iOS)
 
@@ -224,14 +267,23 @@ import ShortIOSDK
 @main
 struct YourApp: App {
     
-    let sdk = ShortIOSDK()
+    let sdk = ShortIOSDK.shared
     var body: some Scene {
         WindowGroup {
             ContentView()
                 .onOpenURL { url in
-                    sdk.handleOpen(url) { result, error in
-                        print("Host: \(result?.host), Path: \(result?.path)", "QueryParams: \(result?.queryItems)")
+                    print("url", url)
+                    sdk.handleOpen(url) { result in
+                        switch result {
+                        case .success(let result):
+                            // Handle successful URL processing
+                            print("result", result, "Host: \(result.host), Path: \(result.path)", "QueryParams: \(result.queryItems)")
+                        case .failure(let error):
+                            // Handle error with proper error type
+                            print("Error: \(error.localizedDescription)")
+                        }
                     }
+
                 }
         }
     }
@@ -249,7 +301,7 @@ import ShortIOSDK
 
 class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     
-    private let sdk = ShortIOSDK()
+    private let sdk = ShortIOSDK.shared
     
     func scene(_ scene: UIScene, continue userActivity: NSUserActivity) {
         guard userActivity.activityType == NSUserActivityTypeBrowsingWeb,
@@ -257,8 +309,15 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
             print("Invalid universal link or URL components")
             return
         }
-        sdk.handleOpen(incomingURL) { result, error in
-            print("Host: \(result?.host), Path: \(result?.path)", "QueryParams: \(result?.queryItems)")
+        sdk.handleOpen(incomingURL) { result in
+            switch result {
+                case .success(let result):
+                    // Handle successful URL processing
+                    print("result", result, "Host: \(result.host), Path: \(result.path)", "QueryParams: \(result.queryItems)")
+                case .failure(let error):
+                    // Handle error with proper error type
+                    print("Error: \(error.localizedDescription)")
+            }
         }
     }
 }

@@ -67,11 +67,9 @@ extension URLComponents {
 class URLHandler {
     @MainActor static let shared = URLHandler()
     private let session: URLSession
-    private var isInitialized: Bool
 
     init(session: URLSession = .shared) {
         self.session = session
-        self.isInitialized = false // Assuming this is set elsewhere
     }
 
     func createURLComponents(from url: URL) throws -> URLComponents {
@@ -136,7 +134,11 @@ class URLHandler {
     }
 
     // MARK: - Public Methods
-    func handleClick(urlComponents: URLComponents, completion: @escaping URLHandlerCompletion) {
+    func handleClick(
+        urlComponents: URLComponents,
+        completion: @escaping URLHandlerCompletion,
+        clidHandler: @escaping (String?) -> Void
+    ) {
 
         // Prepare components with UTM parameter
         var components = urlComponents
@@ -147,7 +149,7 @@ class URLHandler {
         do {
             request = try createURLRequest(from: components)
         } catch {
-            completion(.failure(error as! URLHandlerError))
+            completion(.failure((error as? URLHandlerError) ?? .unknownError))
             return
         }
 
@@ -163,9 +165,17 @@ class URLHandler {
                     let processedComponents = try self?.processHTTPResponse(response) ?? {
                         throw URLHandlerError.unknownError
                     }()
+
+                    // Extract `clid` from processedComponents if available
+                    let clid = processedComponents.queryItems?.first(where: { $0.name == "clid" })?.value
+                    clidHandler(clid)
                     completion(.success(processedComponents))
                 } catch {
-                    completion(.failure(error as! URLHandlerError))
+                    if let urlHandlerError = error as? URLHandlerError {
+                        completion(.failure(urlHandlerError))
+                    } else {
+                        completion(.failure(.unknownError))
+                    }
                 }
             }
         }.resume()

@@ -9,6 +9,7 @@ public class ShortIOSDK {
     private var isInitialized = false
     private var apiKey: String = ""
     private var domain: String = ""
+    private var clid: String = ""
 
     // MARK: - Private Initializer
     private init() {
@@ -34,24 +35,9 @@ public class ShortIOSDK {
         }
     }
 
-    //    @available(*, deprecated, message: "Use instance apiKey instead")
-    //    public struct DeprecatedAPIKey {
-    //        let value: String
-    //    }
-
-    /// Creates a shortened link using Short.io API
-    /// - Parameters:
-    ///   - parameters: Configuration for the shortened link
-    ///   - apiKey: Authentication key for Short.io API
-    /// - Returns: Result containing either success response or error
     @available(macOS 12.0, iOS 15.0, *)
 
-    public func createShortLink(
-        parameters: ShortIOParameters,
-        apiKey: String? = nil
-    ) async throws -> ShortIOResult {
-
-        // Safely construct API endpoint URL
+    private func performCreateShortLink(parameters: ShortIOParameters, apiKey: String?) async throws -> ShortIOResult {
         guard let url = URL(string: Constants.baseURL) else {
             throw ShortIOError.invalidURL
         }
@@ -66,12 +52,10 @@ public class ShortIOSDK {
 
         finalParameters.domain = parameters.domain != nil ? parameters.domain : self.domain
 
-        var finalApiKey = apiKey != nil ? apiKey : self.apiKey
-
         request.httpMethod = "POST"
         request.addValue("application/json", forHTTPHeaderField: "Accept")
         request.addValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.addValue(finalApiKey ?? "", forHTTPHeaderField: "Authorization")
+        request.addValue(apiKey ?? "", forHTTPHeaderField: "Authorization")
 
         do {
             // Encode request parameters
@@ -101,6 +85,32 @@ public class ShortIOSDK {
             // Propagate encoding/decoding/network errors
             throw error
         }
+    }
+
+    /// Creates a shortened link using Short.io API
+    /// - Parameters:
+    ///   - parameters: Configuration for the shortened link
+    ///   - apiKey: Authentication key for Short.io API
+    /// - Returns: Result containing either success response or error
+    @available(*, deprecated, message: "Parameter 'apiKey' is deprecated. Use the instance's configured API key instead. Call initialize(apiKey:domain:) before using this method")
+    @available(macOS 12.0, iOS 15.0, *)
+    public func createShortLink(
+        parameters: ShortIOParameters,
+        apiKey: String? = nil
+    ) async throws -> ShortIOResult {
+
+        // Safely construct API endpoint URL
+        return try await performCreateShortLink(parameters: parameters, apiKey: apiKey)
+
+    }
+
+    @available(macOS 12.0, iOS 15.0, *)
+    public func createShortLink(
+        parameters: ShortIOParameters
+    ) async throws -> ShortIOResult {
+
+        // Safely construct API endpoint URL
+        return try await performCreateShortLink(parameters: parameters, apiKey: self.apiKey)
     }
 
     @available(macOS 12.0, iOS 15.0, *)
@@ -138,12 +148,15 @@ public class ShortIOSDK {
     }
 
     @available(macOS 12.0, iOS 15.0, *)
-    public func trackConversion(clid: String, domain: String? = nil, conversionId: String? = nil) async throws -> Bool {
+    public func trackConversion(clid: String? = nil, domain: String? = nil, conversionId: String? = nil) async throws -> Bool {
 
         // Create the base URL by removing trailing slash if exists
-        let finalDomain = (domain ?? self.domain)?.trimmingCharacters(in: ["/"]) ?? ""
 
-        let finalClid = clid ?? ""
+        let domainToUse = domain ?? self.domain
+        let trimmedDomain = domainToUse.trimmingCharacters(in: ["/"])
+        let finalDomain = trimmedDomain ?? ""
+
+        let finalClid = clid != nil ? clid : self.clid
 
         // Construct the conversion path with clid parameter
         var conversionURLString = "https://\(finalDomain)/.shortio/conversion?clid=\(finalClid)"
@@ -180,9 +193,19 @@ public class ShortIOSDK {
             var handler = URLHandler.shared
             let components = try handler.createURLComponents(from: url)
 
-            handler.handleClick(urlComponents: components, completion: completion)
+            handler.handleClick(urlComponents: components, completion: completion) { clid in
+                if let clid = clid {
+                    self.clid = clid
+                }
+            }
         } catch {
-            completion(.failure(error as! URLHandlerError))
+            //            completion(.failure(error as! URLHandlerError))
+            if let urlHandlerError = error as? URLHandlerError {
+                completion(.failure(urlHandlerError))
+            } else {
+                // Provide a fallback error; you may want to define a .unknown case in URLHandlerError
+                completion(.failure(URLHandlerError.unknownError))
+            }
         }
     }
 }

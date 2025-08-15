@@ -309,7 +309,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
             print("Invalid universal link or URL components")
             return
         }
-        sdk.handleOpen(url) { result in
+        sdk.handleOpen(incomingURL) { result in
             switch result {
                 case .success(let result):
                     // Handle successful URL processing

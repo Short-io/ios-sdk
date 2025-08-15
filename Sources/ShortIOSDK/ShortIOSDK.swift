@@ -156,7 +156,7 @@ public class ShortIOSDK {
         let trimmedDomain = domainToUse.trimmingCharacters(in: ["/"])
         let finalDomain = trimmedDomain ?? ""
 
-        let finalClid = clid != nil ? clid : self.clid
+        let finalClid = clid ?? self.clid
 
         // Construct the conversion path with clid parameter
         var conversionURLString = "https://\(finalDomain)/.shortio/conversion?clid=\(finalClid)"

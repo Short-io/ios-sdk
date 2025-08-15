@@ -97,7 +97,7 @@ let parameters = ShortIOParameters(
 ```
 **Note**: The `originalURL` are the required parameter. You can also pass optional parameters such as `path`, `title`, `utmParameters`, etc.
 
-- `domain` parameter is deprecated. Use the instance's configured API key instead. Call initialize(apiKey:domain:) before using this method
+- `domain` parameter is deprecated. Use the instance's configured API key instead. Call initialize(apiKey:domain:) before using this method.
 
 ``` swift
 let apiKey = "your_public_apiKey" // Replace with your Short.io Public API Key
@@ -119,7 +119,7 @@ Task {
     }
 }
 ```
-**⚠️ Note**: The `apiKey` parameter is deprecated. Use the instance's configured API key instead. Call initialize(apiKey:domain:) before using this method
+**⚠️ Note**: The `apiKey` parameter is deprecated. Use the instance's configured API key instead. Call initialize(apiKey:domain:) before using this method.
 
 ## 📄 API Parameters
 
@@ -200,7 +200,7 @@ let sdk = ShortIOSDK.shared
 Task {
     do {
         let result = try await sdk.trackConversion(
-            domain: "https://{your_domain}", // ⚠️ Deprecated (optional):
+            domain: "your_domain", // ⚠️ Deprecated (optional):
             clid: "your_clid", // ⚠️ Deprecated (optional):
             conversionId: "your_conversionID" (optional)
         )

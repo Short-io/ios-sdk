@@ -258,7 +258,14 @@ This guide explains how to handle Universal Links in iOS applications using the 
 
 ### SwiftUI Project
 
-For SwiftUI apps, use the `onOpenURL` modifier at the entry point of your app to process incoming URLs and navigate to the appropriate views. Below is an example implementation in SwiftUI.
+For SwiftUI apps, use the `onOpenURL` modifier at the entry point of your app to process incoming URLs and retrieve the Original URL.
+The SDK parses the link and provides:
+
+* host → The domain of the short link.
+
+* path → The path component of the link.
+
+* url → The original URL that the short link points to.
 
 ```swift
 import SwiftUI
@@ -277,7 +284,11 @@ struct YourApp: App {
                         switch result {
                         case .success(let result):
                             // Handle successful URL processing
-                            print("result", result, "Host: \(result.host), Path: \(result.path)", "QueryParams: \(result.queryItems)")
+                            print(
+                                "Original URL: \(result.url)",
+                                "Host: \(result.host), Path: \(result.path)",
+                                "QueryParams: \(result.queryItems)"
+                            )
                         case .failure(let error):
                             // Handle error with proper error type
                             print("Error: \(error.localizedDescription)")
@@ -293,7 +304,16 @@ struct YourApp: App {
 
 ### Storyboard Project
 
-For Storyboard apps, implement the `scene(_:continue:)` method in your `SceneDelegate` to handle Universal Links. Below is an example implementation in Storyboard.
+For Storyboard-based apps, you can handle incoming Short.io links (Universal Links) in your SceneDelegate. Implement the scene(_:continue:) method to capture the URL and pass it to the SDK for processing.
+The SDK parses the link and provides:
+
+* host → The domain of the short link.
+
+* path → The path component of the link.
+
+* url → The original URL that the short link points to.
+
+Below is an example implementation in Storyboard.
 
 ```swift
 import UIKit
@@ -313,7 +333,11 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
             switch result {
                 case .success(let result):
                     // Handle successful URL processing
-                    print("result", result, "Host: \(result.host), Path: \(result.path)", "QueryParams: \(result.queryItems)")
+                    print(
+                        "Original URL: \(result.url)",
+                        "Host: \(result.host), Path: \(result.path)",
+                        "QueryParams: \(result.queryItems)"
+                    )
                 case .failure(let error):
                     // Handle error with proper error type
                     print("Error: \(error.localizedDescription)")

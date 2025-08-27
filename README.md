@@ -258,7 +258,7 @@ This guide explains how to handle Universal Links in iOS applications using the 
 
 ### SwiftUI Project
 
-For SwiftUI apps, use the `onOpenURL` modifier at the entry point of your app to process incoming URLs and retrieve the Original URL.
+For SwiftUI apps, use the `onOpenURL` modifier at the entry point of your app to process incoming URLs and retrieve the original URL.
 The SDK parses the link and provides:
 
 * host → The domain of the short link.

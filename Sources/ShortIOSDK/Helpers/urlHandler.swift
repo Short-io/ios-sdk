@@ -1,14 +1,19 @@
 import Foundation
 
 // MARK: - Error Types
-public enum URLHandlerError: LocalizedError {
+public enum URLHandlerError: LocalizedError, Sendable {
+    @available(*, deprecated, message: "Never thrown. Superseded by ShortIOError.notInitialized. Removed in 2.0.0.")
     case notInitialized
     case invalidURL
     case invalidURLScheme
-    case networkError(Error)
+    case networkError(any Error & Sendable)
     case invalidServerResponse
     case invalidResponseURL
+    /// The short link itself was not found — the shortener returned 404 without redirecting.
     case linkNotValid
+    /// The short link resolved, but its destination answered with a failure status.
+    /// The link is fine; the page it points at is not.
+    case destinationUnavailable(statusCode: Int, destination: URL)
     case unexpectedStatusCode(Int)
     case unknownError
 
@@ -28,6 +33,8 @@ public enum URLHandlerError: LocalizedError {
             return "Invalid server response URL"
         case .linkNotValid:
             return "Link is not valid"
+        case .destinationUnavailable(let code, let destination):
+            return "Short link resolved to \(destination.absoluteString), which returned status \(code)"
         case .unexpectedStatusCode(let code):
             return "Unexpected status code: \(code)"
         case .unknownError:
@@ -64,8 +71,7 @@ extension URLComponents {
     }
 }
 
-class URLHandler {
-    @MainActor static let shared = URLHandler()
+final class URLHandler: Sendable {
     private let session: URLSession
 
     init(session: URLSession = .shared) {
@@ -73,7 +79,7 @@ class URLHandler {
     }
 
     func createURLComponents(from url: URL) throws -> URLComponents {
-        guard var components = URLComponents(url: url, resolvingAgainstBaseURL: true),
+        guard let components = URLComponents(url: url, resolvingAgainstBaseURL: true),
               let scheme = components.scheme,
               ["http", "https"].contains(scheme.lowercased()) else {
             throw URLHandlerError.invalidURLScheme
@@ -88,26 +94,14 @@ class URLHandler {
 
         var request = URLRequest(url: url)
         request.httpMethod = "HEAD"
-        request.timeoutInterval = 30.0 // Add timeout for better UX
+        request.timeoutInterval = Constants.requestTimeout
         return request
     }
 
-    private func extractClid(from url: String) throws -> String? {
-        // Convert the URL string to a URL object
-        guard let url = URL(string: url) else {
-            throw URLHandlerError.invalidURL
-        }
-
-        // Parse the URL into components
-        guard let components = URLComponents(url: url, resolvingAgainstBaseURL: false) else {
-            throw URLHandlerError.invalidURL
-        }
-
-        // Extract the clid query parameter
-        return components.queryItems?.first(where: { $0.name == "clid" })?.value
-    }
-
-    private func processHTTPResponse(_ response: URLResponse?) throws -> URLComponents {
+    /// - Parameter requestedURL: The short link that was requested. `URLSession` follows redirects,
+    ///   so a failure status may belong to the destination rather than to the short link itself;
+    ///   comparing the two is what tells them apart.
+    private func processHTTPResponse(_ response: URLResponse?, requestedURL: URL?) throws -> URLComponents {
         guard let httpResponse = response as? HTTPURLResponse else {
             throw URLHandlerError.invalidServerResponse
         }
@@ -120,12 +114,17 @@ class URLHandler {
             throw URLHandlerError.invalidResponseURL
         }
 
+        // A redirect means the shortener resolved the link and we are now looking at the
+        // destination's response, so its status must not be blamed on the short link.
+        let didRedirect = requestedURL.map { responseURL.absoluteString != $0.absoluteString } ?? false
+
         // Process based on status code
         switch httpResponse.statusCode {
         case 200:
             responseComponents.removeUTMMedium()
-            print("Short SDK click call completed successfully")
             return responseComponents
+        case let code where didRedirect:
+            throw URLHandlerError.destinationUnavailable(statusCode: code, destination: responseURL)
         case 404:
             throw URLHandlerError.linkNotValid
         default:
@@ -134,50 +133,31 @@ class URLHandler {
     }
 
     // MARK: - Public Methods
+    /// Performs the click request and returns the processed components plus any `clid`.
     func handleClick(
-        urlComponents: URLComponents,
-        completion: @escaping URLHandlerCompletion,
-        clidHandler: @escaping (String?) -> Void
-    ) {
+        urlComponents: URLComponents
+    ) async throws -> (components: URLComponents, clid: String?) {
 
         // Prepare components with UTM parameter
         var components = urlComponents
         components.addUTMMediumIOS()
 
-        // Create request
-        let request: URLRequest
+        let request = try createURLRequest(from: components)
+
+        let response: URLResponse
         do {
-            request = try createURLRequest(from: components)
+            (_, response) = try await session.data(for: request)
+        } catch is CancellationError {
+            throw CancellationError()
+        } catch let error as URLError where error.code == .cancelled {
+            // URLSession reports cancellation as URLError(.cancelled), which is not a network failure.
+            throw CancellationError()
         } catch {
-            completion(.failure((error as? URLHandlerError) ?? .unknownError))
-            return
+            throw URLHandlerError.networkError(error as NSError)
         }
 
-        // Execute network request
-        session.dataTask(with: request) { [weak self] _, response, error in
-            DispatchQueue.main.async {
-                if let error = error {
-                    completion(.failure(.networkError(error)))
-                    return
-                }
-
-                do {
-                    let processedComponents = try self?.processHTTPResponse(response) ?? {
-                        throw URLHandlerError.unknownError
-                    }()
-
-                    // Extract `clid` from processedComponents if available
-                    let clid = processedComponents.queryItems?.first(where: { $0.name == "clid" })?.value
-                    clidHandler(clid)
-                    completion(.success(processedComponents))
-                } catch {
-                    if let urlHandlerError = error as? URLHandlerError {
-                        completion(.failure(urlHandlerError))
-                    } else {
-                        completion(.failure(.unknownError))
-                    }
-                }
-            }
-        }.resume()
+        let processedComponents = try processHTTPResponse(response, requestedURL: request.url)
+        let clid = processedComponents.queryItems?.first(where: { $0.name == "clid" })?.value
+        return (processedComponents, clid)
     }
 }

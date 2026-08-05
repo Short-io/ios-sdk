@@ -1,6 +1,6 @@
 import Foundation
 
-public struct ShortIOResponse: Decodable {
+public struct ShortIOResponse: Decodable, Sendable {
     public let originalURL: String
     public let path: String
     public let idString: String

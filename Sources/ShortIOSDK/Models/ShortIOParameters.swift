@@ -1,6 +1,6 @@
 import Foundation
 
-public enum IntOrString: Encodable {
+public enum IntOrString: Encodable, Sendable {
     case int(Int)
     case string(String)
     
@@ -15,8 +15,16 @@ public enum IntOrString: Encodable {
     }
 }
 
-public struct ShortIOParameters: Encodable {
-    public var domain: String?
+public struct ShortIOParameters: Encodable, Sendable {
+    /// Backing storage, so the SDK does not trigger its own deprecation warning.
+    var _domain: String?
+
+    @available(*, deprecated, message: "'domain' is supplied by initialize(apiKey:domain:) and will be removed in 2.0.0. Set it here only to override that for a single call.")
+    public var domain: String? {
+        get { _domain }
+        set { _domain = newValue }
+    }
+
     public let originalURL: String
     public var cloaking: Bool?
     public var password: String?
@@ -79,7 +87,7 @@ public struct ShortIOParameters: Encodable {
         integrationGTM: String? = nil,
         folderId: String? = nil
     ) {
-        self.domain = domain
+        self._domain = domain
         self.originalURL = originalURL
         self.cloaking = cloaking
         self.password = password
@@ -112,7 +120,7 @@ public struct ShortIOParameters: Encodable {
     }
     
     private enum CodingKeys: String, CodingKey {
-        case domain
+        case _domain = "domain"
         case originalURL
         case cloaking
         case password

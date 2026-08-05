@@ -90,14 +90,14 @@ import ShortIOSDK
 
 let sdk = ShortIOSDK.shared
 
+// The domain comes from initialize(apiKey:domain:) — no need to repeat it here.
 let parameters = ShortIOParameters(
-    domain: "your_domain", // Replace with your Short.io domain
-    originalURL: "https://{your_domain}"// Replace with your Short.io domain
+    originalURL: "https://example.com/your/long/url" // the URL you want shortened
 )
 ```
-**Note**: The `originalURL` are the required parameter. You can also pass optional parameters such as `path`, `title`, `utmParameters`, etc.
+**Note**: `originalURL` is the only required parameter — and it is the **destination** URL you want to shorten, not your Short.io domain. You can also pass optional parameters such as `path`, `title`, `utmSource`, etc.
 
-- `domain` parameter is deprecated. Use the instance's configured API key instead. Call initialize(apiKey:domain:) before using this method.
+- The `domain` parameter is deprecated and will be removed in 2.0.0. A domain is still **required** by the API — supply it once via `initialize(apiKey:domain:)` and every request will use it. Setting `domain` here overrides that for a single call.
 
 ``` swift
 let apiKey = "your_public_apiKey" // Replace with your Short.io Public API Key
@@ -119,7 +119,7 @@ Task {
     }
 }
 ```
-**⚠️ Note**: The `apiKey` parameter is deprecated. Use the instance's configured API key instead. Call initialize(apiKey:domain:) before using this method.
+**⚠️ Note**: The `apiKey` parameter is deprecated. Call `initialize(apiKey:domain:)` first, then use `createShortLink(parameters:)`. This overload will be removed in 2.0.0.
 
 ## 📄 API Parameters
 
@@ -128,7 +128,7 @@ The `ShortIOParameters` struct is used to define the details of the short link y
 
 | Parameter           | Type         | Required  | Description                                                  |
 | ------------------- | -----------  | --------  | ------------------------------------------------------------ |
-| `domain`            | `String`     | ✅ (Deprecated)        | ⚠️ Deprecated. No longer required — inferred from API key. May be removed in future versions.             |
+| `domain`            | `String`     | ⚠️ (Deprecated)        | ⚠️ Deprecated — pass it to `initialize(apiKey:domain:)` instead, which supplies it for every request. Setting it here overrides that. Removed in 2.0.0. |
 | `originalURL`       | `String`     | ✅        | The original URL to be shortened                             |
 | `cloaking`          | `Bool`       | ❌        | If `true`, hides the destination URL from the user           |
 | `password`          | `String`     | ❌        | Password to protect the short link                           |
@@ -200,9 +200,7 @@ let sdk = ShortIOSDK.shared
 Task {
     do {
         let result = try await sdk.trackConversion(
-            domain: "your_domain", // ⚠️ Deprecated (optional):
-            clid: "your_clid", // ⚠️ Deprecated (optional):
-            conversionId: "your_conversionID" (optional)
+            conversionId: "your_conversionID" // optional
         )
         print("result", result)
     } catch {
@@ -211,8 +209,9 @@ Task {
 }
 ```
 
-**⚠️ Note:** All three parameters — `domain`, `clid`, and `conversionId` — are optional.
-- `domain` and `clid` are deprecated and may be removed in future versions.
+**Note:** `conversionId` is optional. The `clid` is captured automatically by `handleOpen(_:)` when the user opens the link, and the domain comes from `initialize(apiKey:domain:)` — so neither needs to be passed.
+
+**⚠️ Deprecated:** the `trackConversion(clid:domain:conversionId:)` overload still works, but is deprecated as of `1.1.0` and **will be removed in `2.0.0`**. Xcode offers a fix-it to migrate to `trackConversion(conversionId:)`.
 
 ## 🌐 Deep Linking Setup (Universal Links for iOS)
 
@@ -256,9 +255,16 @@ ABCDEFGHIJ.com.example.app
 
 This guide explains how to handle Universal Links in iOS applications using the SDK's `handleOpen` function. Below are implementation details for both SwiftUI and Storyboard-based projects.
 
+The SDK resolves the short link and returns the `URLComponents` of its **destination** — not of the short link you passed in:
+
+* `url` → The destination URL the short link points to.
+* `host` → The destination's host.
+* `path` → The destination's path.
+* `queryItems` → The destination's query parameters.
+
 ### SwiftUI Project
 
-For SwiftUI apps, use the `onOpenURL` modifier at the entry point of your app to process incoming URLs and navigate to the appropriate views. Below is an example implementation in SwiftUI.
+For SwiftUI apps, use the `onOpenURL` modifier at the entry point of your app to process incoming URLs and retrieve the original URL. Below is an example implementation in SwiftUI.
 
 ```swift
 import SwiftUI
@@ -266,24 +272,26 @@ import ShortIOSDK
 
 @main
 struct YourApp: App {
-    
+
     let sdk = ShortIOSDK.shared
     var body: some Scene {
         WindowGroup {
             ContentView()
                 .onOpenURL { url in
-                    print("url", url)
-                    sdk.handleOpen(url) { result in
-                        switch result {
-                        case .success(let result):
+                    Task {
+                        do {
+                            let components = try await sdk.handleOpen(url)
                             // Handle successful URL processing
-                            print("result", result, "Host: \(result.host), Path: \(result.path)", "QueryParams: \(result.queryItems)")
-                        case .failure(let error):
+                            print(
+                                "Original URL: \(components.url?.absoluteString ?? "unknown")",
+                                "Host: \(components.host ?? "nil"), Path: \(components.path)",
+                                "QueryParams: \(components.queryItems ?? [])"
+                            )
+                        } catch {
                             // Handle error with proper error type
                             print("Error: \(error.localizedDescription)")
                         }
                     }
-
                 }
         }
     }
@@ -293,30 +301,34 @@ struct YourApp: App {
 
 ### Storyboard Project
 
-For Storyboard apps, implement the `scene(_:continue:)` method in your `SceneDelegate` to handle Universal Links. Below is an example implementation in Storyboard.
+For Storyboard-based apps, you can handle incoming Short.io links (Universal Links) in your `SceneDelegate`. Implement the `scene(_:continue:)` method to capture the URL and pass it to the SDK for processing. Below is an example implementation in Storyboard.
 
 ```swift
 import UIKit
 import ShortIOSDK
 
 class SceneDelegate: UIResponder, UIWindowSceneDelegate {
-    
+
     private let sdk = ShortIOSDK.shared
-    
+
     func scene(_ scene: UIScene, continue userActivity: NSUserActivity) {
         guard userActivity.activityType == NSUserActivityTypeBrowsingWeb,
               let incomingURL = userActivity.webpageURL else {
             print("Invalid universal link or URL components")
             return
         }
-        sdk.handleOpen(incomingURL) { result in
-            switch result {
-                case .success(let result):
-                    // Handle successful URL processing
-                    print("result", result, "Host: \(result.host), Path: \(result.path)", "QueryParams: \(result.queryItems)")
-                case .failure(let error):
-                    // Handle error with proper error type
-                    print("Error: \(error.localizedDescription)")
+        Task {
+            do {
+                let components = try await sdk.handleOpen(incomingURL)
+                // Handle successful URL processing
+                print(
+                    "Original URL: \(components.url?.absoluteString ?? "unknown")",
+                    "Host: \(components.host ?? "nil"), Path: \(components.path)",
+                    "QueryParams: \(components.queryItems ?? [])"
+                )
+            } catch {
+                // Handle error with proper error type
+                print("Error: \(error.localizedDescription)")
             }
         }
     }
@@ -324,6 +336,32 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
 ```
 ### Using the `handleOpen` Function
 
-The `handleOpen` function, provided by the SDK, processes a given URL and returns `URLComponents` if the URL is valid. It ensures proper parsing of universal links, checking for a valid scheme and returning all available components for further processing.
+```swift
+public func handleOpen(_ url: URL) async throws -> URLComponents
+```
+
+The `handleOpen` function, provided by the SDK, processes a given URL and returns `URLComponents` if the URL is valid. It ensures proper parsing of universal links, checking for a valid scheme and returning all available components for further processing. It also records the link's `clid`, so a later call to `trackConversion` can attribute the conversion without you passing it explicitly.
 
 You can access properties like `host`, `path`, `queryItems`, or other properties from the returned `URLComponents` to determine the appropriate navigation or action in your app.
+
+On failure it throws a `URLHandlerError` — for example `.invalidURLScheme` for a non-HTTP URL, `.linkNotValid` if the short link returns 404, or `.networkError` if the request fails.
+
+#### ⚠️ Deprecated: completion-handler variant
+
+```swift
+@available(*, deprecated, renamed: "handleOpen(_:)")
+@MainActor
+public func handleOpen(_ url: URL, completion: @escaping URLHandlerCompletion)
+```
+
+The completion-handler form still works and still delivers its result on the main thread, so existing integrations continue to compile and behave identically. It is deprecated as of `1.1.0` and **will be removed in `2.0.0`**. Xcode offers a fix-it to migrate to the `async` form above.
+
+### Swift 6 Support
+
+The SDK is built in Swift 6 language mode and is free of data-race diagnostics. `ShortIOSDK` conforms to `Sendable`, so you can hold and call it from any isolation context — including from a `@MainActor` type such as a SwiftUI view — without `@preconcurrency import` or `nonisolated(unsafe)`.
+
+Apps using Swift 5 language mode are unaffected and require no source changes.
+
+#### ⚠️ Minimum deployment target
+
+As of `1.1.0` the package declares a floor of **iOS 15.0 / macOS 12.0**. Earlier releases declared no floor and instead gated the individual `async` methods with `@available`, so an app targeting iOS 13 or 14 could link the SDK and use the completion-handler APIs. That is no longer possible — apps below iOS 15 must stay on `1.0.x`.

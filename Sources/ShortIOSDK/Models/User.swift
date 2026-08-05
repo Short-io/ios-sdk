@@ -1,6 +1,6 @@
 import Foundation
 
-public struct User: Decodable {
+public struct User: Decodable, Sendable {
     public let id: Int
     public let name: String
     public let email: String

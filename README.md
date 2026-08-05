@@ -344,7 +344,12 @@ The `handleOpen` function, provided by the SDK, processes a given URL and return
 
 You can access properties like `host`, `path`, `queryItems`, or other properties from the returned `URLComponents` to determine the appropriate navigation or action in your app.
 
-On failure it throws a `URLHandlerError` — for example `.invalidURLScheme` for a non-HTTP URL, `.linkNotValid` if the short link returns 404, or `.networkError` if the request fails.
+On failure it throws a `URLHandlerError`:
+
+* `.invalidURLScheme` — the URL is not `http` or `https`.
+* `.linkNotValid` — the short link itself was not found (404, no redirect).
+* `.destinationUnavailable(statusCode:destination:)` — the short link resolved, but the page it points at returned a failure status. The link is fine; its destination is not.
+* `.networkError` — the request failed to complete.
 
 #### ⚠️ Deprecated: completion-handler variant
 

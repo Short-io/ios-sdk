@@ -1,4 +1,4 @@
-public struct ShortIOErrorResponse: Decodable {
+public struct ShortIOErrorResponse: Decodable, Sendable {
     public let message: String
     public let code: String?
     public let statusCode: Int

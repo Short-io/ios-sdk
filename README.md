@@ -369,4 +369,4 @@ Apps using Swift 5 language mode are unaffected and require no source changes.
 
 #### ⚠️ Minimum deployment target
 
-As of `1.1.0` the package declares a floor of **iOS 15.0 / macOS 12.0**. Earlier releases declared no floor and instead gated the individual `async` methods with `@available`, so an app targeting iOS 13 or 14 could link the SDK and use the completion-handler APIs. That is no longer possible — apps below iOS 15 must stay on `1.0.x`.
+As of `1.1.0` the package declares a floor of **iOS 15.0 / macOS 12.0**. Earlier releases declared no floor and instead gated the individual `async` methods with `@available`, so an app targeting iOS 13 or 14 could link the SDK and use the completion-handler APIs. That is no longer possible — apps below iOS 15.0 or macOS 12.0 must stay on `1.0.x`.

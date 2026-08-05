@@ -116,7 +116,15 @@ final class URLHandler: Sendable {
 
         // A redirect means the shortener resolved the link and we are now looking at the
         // destination's response, so its status must not be blamed on the short link.
-        let didRedirect = requestedURL.map { responseURL.absoluteString != $0.absoluteString } ?? false
+        //
+        // Compared on scheme/host/path only: the query is not identity here. This request
+        // carries an appended `utm_medium`, and servers may canonicalise the query on the way
+        // back, so comparing whole URLs reports a redirect that never happened.
+        let didRedirect = requestedURL.map { requested in
+            responseURL.scheme?.lowercased() != requested.scheme?.lowercased()
+                || responseURL.host?.lowercased() != requested.host?.lowercased()
+                || responseURL.path != requested.path
+        } ?? false
 
         // Process based on status code
         switch httpResponse.statusCode {

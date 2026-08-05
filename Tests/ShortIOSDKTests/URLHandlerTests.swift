@@ -16,8 +16,37 @@ struct URLHandlerTests {
         let handler = URLHandler(session: URLProtocolStub.session())
         let components = try makeComponents("https://example.com/click/missing")
 
-        await #expect(throws: URLHandlerError.self) {
-            try await handler.handleClick(urlComponents: components)
+        do {
+            _ = try await handler.handleClick(urlComponents: components)
+            Issue.record("expected handleClick to throw")
+        } catch let error as URLHandlerError {
+            guard case .linkNotValid = error else {
+                Issue.record("expected .linkNotValid, got \(error)")
+                return
+            }
+        }
+    }
+
+    /// `handleClick` appends `utm_medium`, and a server may hand the query back canonicalised.
+    /// A query-only difference is not a redirect, so a dead short link must stay `.linkNotValid`.
+    @Test func queryOnlyDifferenceIsNotTreatedAsARedirect() async throws {
+        let shortLink = URL(string: "https://example.com/click/missing")!
+        URLProtocolStub.register(.init(
+            statusCode: 404,
+            url: shortLink,
+            responseURL: URL(string: "https://example.com/click/missing?utm_medium=ios&extra=1")!
+        ))
+        let handler = URLHandler(session: URLProtocolStub.session())
+        let components = try makeComponents(shortLink.absoluteString)
+
+        do {
+            _ = try await handler.handleClick(urlComponents: components)
+            Issue.record("expected handleClick to throw")
+        } catch let error as URLHandlerError {
+            guard case .linkNotValid = error else {
+                Issue.record("expected .linkNotValid, got \(error)")
+                return
+            }
         }
     }
 

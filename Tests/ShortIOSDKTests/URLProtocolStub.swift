@@ -136,8 +136,12 @@ final class URLProtocolStub: URLProtocol, @unchecked Sendable {
 
     override func stopLoading() {}
 
-    private enum StubError: Error, CustomStringConvertible {
+    private enum StubError: LocalizedError, CustomStringConvertible {
         case noStubForRequest(URLRequest)
+
+        /// Without this, `localizedDescription` reports "(StubError error 0)" and a missing
+        /// stub surfaces as an unreadable failure.
+        var errorDescription: String? { description }
 
         var description: String {
             switch self {

@@ -1,0 +1,173 @@
+name: CI
+
+on:
+  workflow_dispatch:
+  pull_request:
+  push:
+    branches: [main]
+
+# Least privilege: nothing here needs more than reading the checkout.
+permissions:
+  contents: read
+
+# A force-push to a PR supersedes the run already in flight; don't pay for both.
+# Pushes to main are exempt — cancelling those leaves a merged commit with no
+# completed run, and the README badge reporting a cancellation.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  spm-test:
+    name: swift test (macOS)
+    runs-on: macos-15
+    # A wedged toolchain otherwise runs to the 360-minute default, billed at the
+    # 10x macOS multiplier.
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: maxim-lobanov/setup-xcode@ed7a3b1fda3918c0306d1b724322adc0b8cc0a90 # v1.7.0
+        with:
+          # Pinned so a newly released Xcode cannot turn CI red on an unchanged
+          # tree. macos-15 currently ships 16.0-16.4 and 26.0-26.3; this and the
+          # runs-on image above are a matched pair, so bump them together.
+          xcode-version: "26.3"
+
+      - name: Show toolchain
+        run: |
+          swift --version
+          xcodebuild -version
+
+      - name: Build
+        run: swift build -v
+
+      - name: Test
+        run: swift test -v
+
+  # Compile-time enforcement of the floor declared in Package.swift. Swift's
+  # availability checking is a compile-time feature, so building at the minimum
+  # deployment target is what actually catches "used an iOS 16 API without an
+  # #available guard" — a booted simulator is not required and cannot be had:
+  # Apple no longer publishes an iOS 15 simulator runtime for current Xcode
+  # ("iOS 15.5 is not available for download"). If this job is ever the only
+  # thing standing between the SDK and an iOS 15 user, that is by necessity.
+  deployment-floor-build:
+    name: build @ deployment floor (iOS 15.0)
+    runs-on: macos-15
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: maxim-lobanov/setup-xcode@ed7a3b1fda3918c0306d1b724322adc0b8cc0a90 # v1.7.0
+        with:
+          # Pinned so a newly released Xcode cannot turn CI red on an unchanged
+          # tree. macos-15 currently ships 16.0-16.4 and 26.0-26.3; this and the
+          # runs-on image above are a matched pair, so bump them together.
+          xcode-version: "26.3"
+
+      # generic/ destination compiles without booting anything.
+      - name: Build for iOS 15.0
+        run: |
+          xcodebuild build \
+            -scheme ShortIOSDK \
+            -destination 'generic/platform=iOS Simulator' \
+            IPHONEOS_DEPLOYMENT_TARGET=15.0
+
+  ios-simulator-test:
+    name: xcodebuild test (iOS ${{ matrix.ios }})
+    runs-on: macos-15
+    timeout-minutes: 45
+    strategy:
+      # Knowing whether every runtime broke or only the oldest is the useful
+      # signal; don't let the first failure hide the rest.
+      fail-fast: false
+      matrix:
+        # "16.4" is the oldest runtime Apple still publishes for current Xcode,
+        # so it is the real, testable floor. Downloading it costs several GB and
+        # a few minutes per run — drop this leg if that outweighs the coverage.
+        ios: ["16.4", "latest"]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: maxim-lobanov/setup-xcode@ed7a3b1fda3918c0306d1b724322adc0b8cc0a90 # v1.7.0
+        with:
+          # Pinned so a newly released Xcode cannot turn CI red on an unchanged
+          # tree. macos-15 currently ships 16.0-16.4 and 26.0-26.3; this and the
+          # runs-on image above are a matched pair, so bump them together.
+          xcode-version: "26.3"
+
+      - name: Install iOS ${{ matrix.ios }} runtime
+        if: matrix.ios != 'latest'
+        env:
+          IOS_VERSION: ${{ matrix.ios }}
+        run: xcodebuild -downloadPlatform iOS -buildVersion "$IOS_VERSION"
+
+      # Device names and runtime sets change between runner images, so a
+      # hardcoded `name=iPhone 17` eventually fails on device lookup rather than
+      # on the code. Resolve a concrete UDID instead, and fail loudly with a
+      # device dump if the runtime this leg asked for is not present.
+      - name: Select iOS simulator
+        env:
+          IOS_VERSION: ${{ matrix.ios }}
+        run: |
+          set -o pipefail
+
+          # Sort numerically on (major, minor). Sorting the identifier as a
+          # string ranks iOS-26-10 below iOS-26-2.
+          RUNTIME=$(xcrun simctl list runtimes -j | jq -r --arg v "$IOS_VERSION" '
+            .runtimes
+            | map(select(.platform == "iOS" and .isAvailable))
+            | if $v == "latest"
+              then sort_by(.version | split(".") | map(tonumber)) | last
+              else map(select(.version | startswith($v))) | last
+              end
+            | .identifier // empty
+          ')
+          if [ -z "$RUNTIME" ]; then
+            echo "::error::No available iOS $IOS_VERSION runtime on this runner image."
+            xcrun simctl list runtimes
+            exit 1
+          fi
+
+          UDID=$(xcrun simctl list devices available -j | jq -r --arg r "$RUNTIME" '
+            .devices[$r] // []
+            | map(select(.name | startswith("iPhone")))
+            | last
+            | .udid // empty
+          ')
+
+          # A freshly downloaded runtime may arrive with no prebuilt devices.
+          # iPhone SE (3rd generation) exists in every runtime from 15.4 up, so
+          # it is the safe device type to create across this matrix.
+          if [ -z "$UDID" ]; then
+            echo "No prebuilt iPhone for $RUNTIME; creating one."
+            UDID=$(xcrun simctl create ci-iphone \
+              com.apple.CoreSimulator.SimDeviceType.iPhone-SE-3rd-generation \
+              "$RUNTIME")
+          fi
+          if [ -z "$UDID" ]; then
+            echo "::error::Could not obtain an iPhone simulator for $RUNTIME."
+            xcrun simctl list devices available
+            exit 1
+          fi
+
+          echo "Using $RUNTIME simulator $UDID"
+          echo "DESTINATION=platform=iOS Simulator,id=$UDID" >> "$GITHUB_ENV"
+
+      - name: Test
+        run: |
+          xcodebuild test \
+            -scheme ShortIOSDK \
+            -destination "$DESTINATION" \
+            -resultBundlePath TestResults.xcresult
+
+      # Only on failure: the .xcresult opens in Xcode and shows the failing
+      # assertion directly, instead of leaving only scrollback to read.
+      - name: Upload test results
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: ios-simulator-test-results-${{ matrix.ios }}
+          path: TestResults.xcresult
+          retention-days: 7

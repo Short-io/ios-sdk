@@ -1,6 +1,8 @@
 
 # ShortLink SDK for iOS (Deep Linking Integration using Short.io)
 
+[![CI](https://github.com/Short-io/ios-sdk/actions/workflows/ci.yml/badge.svg)](https://github.com/Short-io/ios-sdk/actions/workflows/ci.yml)
+
 This SDK allows you to create short links using the [Short.io](https://short.io/) API based on a public API key and custom parameters. It also supports iOS deep linking integration using Universal Links.
 
 ## ✨ Features

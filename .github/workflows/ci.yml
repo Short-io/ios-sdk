@@ -113,15 +113,18 @@ jobs:
         run: |
           set -o pipefail
 
-          # Sort numerically on (major, minor). Sorting the identifier as a
-          # string ranks iOS-26-10 below iOS-26-2.
+          # Sort numerically on version components in both branches. A string
+          # sort ranks 26.10 below 26.2, and simctl does not promise an order,
+          # so an unsorted `last` over an explicit-version match would pick an
+          # arbitrary patch when both 16.4 and 16.4.1 are installed.
           RUNTIME=$(xcrun simctl list runtimes -j | jq -r --arg v "$IOS_VERSION" '
             .runtimes
             | map(select(.platform == "iOS" and .isAvailable))
-            | if $v == "latest"
-              then sort_by(.version | split(".") | map(tonumber)) | last
-              else map(select(.version | startswith($v))) | last
+            | if $v == "latest" then .
+              else map(select(.version | startswith($v)))
               end
+            | sort_by(.version | split(".") | map(tonumber))
+            | last
             | .identifier // empty
           ')
           if [ -z "$RUNTIME" ]; then

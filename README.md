@@ -99,7 +99,7 @@ let parameters = ShortIOParameters(
 ```
 **Note**: `originalURL` is the only required parameter — and it is the **destination** URL you want to shorten, not your Short.io domain. You can also pass optional parameters such as `path`, `title`, `utmSource`, etc.
 
-- **Deprecated in 2.0.0.** Supply the domain once via `initialize(apiKey:domain:)` instead; every request will then use it. A domain is still **required** by the API. Setting `domain` here overrides the initialized value for a single call. This parameter still works and will be removed in a future major release.
+- **⚠️ `domain` deprecated in 2.0.0.** Supply the domain once via `initialize(apiKey:domain:)` instead; every request will then use it. A domain is still **required** by the API, and setting `domain` here overrides the initialized value for a single call. The parameter still works and will be removed in a future major release.
 
 ``` swift
 let apiKey = "your_public_apiKey" // Replace with your Short.io Public API Key
@@ -121,7 +121,7 @@ Task {
     }
 }
 ```
-**⚠️ Deprecated in 2.0.0.** Call `initialize(apiKey:domain:)` first, then use `createShortLink(parameters:)` instead. This overload still works and will be removed in a future major release.
+**⚠️ `createShortLink(parameters:apiKey:)` deprecated in 2.0.0.** Call `initialize(apiKey:domain:)` first, then use `createShortLink(parameters:)` instead. This overload still works and will be removed in a future major release.
 
 ## 📄 API Parameters
 
@@ -213,7 +213,7 @@ Task {
 
 **Note:** `conversionId` is optional. The `clid` is captured automatically by `handleOpen(_:)` when the user opens the link, and the domain comes from `initialize(apiKey:domain:)` — so neither needs to be passed.
 
-**⚠️ Deprecated in 2.0.0.** Use `trackConversion(conversionId:)` instead; Xcode offers a fix-it. This overload still works and will be removed in a future major release.
+**⚠️ `trackConversion(clid:domain:conversionId:)` deprecated in 2.0.0.** Use `trackConversion(conversionId:)` instead; Xcode offers a fix-it. This overload still works and will be removed in a future major release.
 
 ## 🌐 Deep Linking Setup (Universal Links for iOS)
 
@@ -361,7 +361,7 @@ On failure it throws a `URLHandlerError`:
 public func handleOpen(_ url: URL, completion: @escaping URLHandlerCompletion)
 ```
 
-**⚠️ Deprecated in 2.0.0.** Use the `async` form above instead; Xcode offers a fix-it. The completion-handler form still works and still delivers its result on the main thread, so existing integrations compile and behave identically. It will be removed in a future major release.
+**⚠️ `handleOpen(_:completion:)` deprecated in 2.0.0.** Use the `async` form above instead; Xcode offers a fix-it. The completion-handler form still works and still delivers its result on the main thread, so existing integrations compile and behave identically. It will be removed in a future major release.
 
 ### Swift 6 Support
 

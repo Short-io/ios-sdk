@@ -99,7 +99,7 @@ let parameters = ShortIOParameters(
 ```
 **Note**: `originalURL` is the only required parameter — and it is the **destination** URL you want to shorten, not your Short.io domain. You can also pass optional parameters such as `path`, `title`, `utmSource`, etc.
 
-- The `domain` parameter is deprecated and will be removed in 2.0.0. A domain is still **required** by the API — supply it once via `initialize(apiKey:domain:)` and every request will use it. Setting `domain` here overrides that for a single call.
+- **Deprecated in 2.0.0.** Supply the domain once via `initialize(apiKey:domain:)` instead; every request will then use it. A domain is still **required** by the API. Setting `domain` here overrides the initialized value for a single call. This parameter still works and will be removed in a future major release.
 
 ``` swift
 let apiKey = "your_public_apiKey" // Replace with your Short.io Public API Key
@@ -121,7 +121,7 @@ Task {
     }
 }
 ```
-**⚠️ Note**: The `apiKey` parameter is deprecated. Call `initialize(apiKey:domain:)` first, then use `createShortLink(parameters:)`. This overload will be removed in 2.0.0.
+**⚠️ Deprecated in 2.0.0.** Call `initialize(apiKey:domain:)` first, then use `createShortLink(parameters:)` instead. This overload still works and will be removed in a future major release.
 
 ## 📄 API Parameters
 
@@ -130,7 +130,7 @@ The `ShortIOParameters` struct is used to define the details of the short link y
 
 | Parameter           | Type         | Required  | Description                                                  |
 | ------------------- | -----------  | --------  | ------------------------------------------------------------ |
-| `domain`            | `String`     | ⚠️ (Deprecated)        | ⚠️ Deprecated — pass it to `initialize(apiKey:domain:)` instead, which supplies it for every request. Setting it here overrides that. Removed in 2.0.0. |
+| `domain`            | `String`     | ⚠️ (Deprecated)        | ⚠️ Deprecated in 2.0.0. Pass it to `initialize(apiKey:domain:)` instead, which supplies it for every request; setting it here overrides that. Still works, and will be removed in a future major release. |
 | `originalURL`       | `String`     | ✅        | The original URL to be shortened                             |
 | `cloaking`          | `Bool`       | ❌        | If `true`, hides the destination URL from the user           |
 | `password`          | `String`     | ❌        | Password to protect the short link                           |
@@ -213,7 +213,7 @@ Task {
 
 **Note:** `conversionId` is optional. The `clid` is captured automatically by `handleOpen(_:)` when the user opens the link, and the domain comes from `initialize(apiKey:domain:)` — so neither needs to be passed.
 
-**⚠️ Deprecated:** the `trackConversion(clid:domain:conversionId:)` overload still works, but is deprecated as of `1.1.0` and **will be removed in `2.0.0`**. Xcode offers a fix-it to migrate to `trackConversion(conversionId:)`.
+**⚠️ Deprecated in 2.0.0.** Use `trackConversion(conversionId:)` instead; Xcode offers a fix-it. This overload still works and will be removed in a future major release.
 
 ## 🌐 Deep Linking Setup (Universal Links for iOS)
 
@@ -361,7 +361,7 @@ On failure it throws a `URLHandlerError`:
 public func handleOpen(_ url: URL, completion: @escaping URLHandlerCompletion)
 ```
 
-The completion-handler form still works and still delivers its result on the main thread, so existing integrations continue to compile and behave identically. It is deprecated as of `1.1.0` and **will be removed in `2.0.0`**. Xcode offers a fix-it to migrate to the `async` form above.
+**⚠️ Deprecated in 2.0.0.** Use the `async` form above instead; Xcode offers a fix-it. The completion-handler form still works and still delivers its result on the main thread, so existing integrations compile and behave identically. It will be removed in a future major release.
 
 ### Swift 6 Support
 
@@ -371,4 +371,4 @@ Apps using Swift 5 language mode are unaffected and require no source changes.
 
 #### ⚠️ Minimum deployment target
 
-As of `1.1.0` the package declares a floor of **iOS 15.0 / macOS 12.0**. Earlier releases declared no floor and instead gated the individual `async` methods with `@available`, so an app targeting iOS 13 or 14 could link the SDK and use the completion-handler APIs. That is no longer possible — apps below iOS 15.0 or macOS 12.0 must stay on `1.0.x`.
+As of `2.0.0` the package declares a floor of **iOS 15.0 / macOS 12.0**. Earlier releases declared no floor and instead gated the individual `async` methods with `@available`, so an app targeting iOS 13 or 14 could link the SDK and use the completion-handler APIs. That is no longer possible — apps below iOS 15.0 or macOS 12.0 must stay on `1.0.x`.

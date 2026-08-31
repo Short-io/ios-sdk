@@ -102,14 +102,9 @@ let parameters = ShortIOParameters(
 - **⚠️ `domain` deprecated in 2.0.0.** Supply the domain once via `initialize(apiKey:domain:)` instead; every request will then use it. A domain is still **required** by the API, and setting `domain` here overrides the initialized value for a single call. The parameter still works and will be removed in future releases.
 
 ``` swift
-let apiKey = "your_public_apiKey" // Replace with your Short.io Public API Key
-        
 Task {
     do {
-        let result = try await sdk.createShortLink(
-            parameters: parameters,
-            apiKey: apiKey
-        )
+        let result = try await sdk.createShortLink(parameters: parameters)
         switch result {
             case .success(let response):
                 print("Short URL created: \(response.shortURL)")
@@ -213,7 +208,7 @@ Task {
 
 **Note:** `conversionId` is optional. The `clid` is captured automatically by `handleOpen(_:)` when the user opens the link, and the domain comes from `initialize(apiKey:domain:)` — so neither needs to be passed.
 
-**⚠️ `trackConversion(clid:domain:conversionId:)` deprecated in 2.0.0.** Use `trackConversion(conversionId:)` instead; Xcode offers a fix-it. This overload still works and will be removed in future releases.
+**⚠️ `trackConversion(clid:domain:conversionId:)` deprecated in 2.0.0.** Use `trackConversion(conversionId:)` instead; drop the `clid` and `domain` arguments. This overload still works and will be removed in future releases.
 
 ## 🌐 Deep Linking Setup (Universal Links for iOS)
 
@@ -361,7 +356,7 @@ On failure it throws a `URLHandlerError`:
 public func handleOpen(_ url: URL, completion: @escaping URLHandlerCompletion)
 ```
 
-**⚠️ `handleOpen(_:completion:)` deprecated in 2.0.0.** Use the `async` form above instead; Xcode offers a fix-it. The completion-handler form still works and still delivers its result on the main thread, so existing integrations compile and behave identically. It will be removed in future releases.
+**⚠️ `handleOpen(_:completion:)` deprecated in 2.0.0.** Use the `async` form above instead. The completion-handler form still works and still delivers its result on the main thread, so existing integrations compile and behave identically. It will be removed in future releases.
 
 ### Swift 6 Support
 

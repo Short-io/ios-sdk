@@ -102,7 +102,7 @@ public final class ShortIOSDK: Sendable {
     ///   - apiKey: Authentication key for Short.io API
     /// - Returns: Result containing either success response or error
     @available(*, deprecated, renamed: "createShortLink(parameters:)",
-               message: "Parameter 'apiKey' is deprecated. Call initialize(apiKey:domain:) first, then use createShortLink(parameters:). This overload will be removed in 2.0.0.")
+               message: "Parameter 'apiKey' is deprecated. Call initialize(apiKey:domain:) first, then use createShortLink(parameters:). This overload will be removed in future releases.")
     public func createShortLink(
         parameters: ShortIOParameters,
         apiKey: String? = nil
@@ -140,8 +140,8 @@ public final class ShortIOSDK: Sendable {
         }
         let sealedBox = try AES.GCM.seal(urlData, using: key, nonce: nonce)
 
-        // Encode encrypted data and nonce to Base64
-        let encryptedUrlBase64 = sealedBox.ciphertext.base64EncodedString()
+        // The decrypter is WebCrypto AES-GCM, which expects the tag appended to the ciphertext.
+        let encryptedUrlBase64 = (sealedBox.ciphertext + sealedBox.tag).base64EncodedString()
         let nonceBase64 = sealedBox.nonce.withUnsafeBytes { Data($0).base64EncodedString() }
 
         // Construct secured URL
@@ -167,7 +167,7 @@ public final class ShortIOSDK: Sendable {
     }
 
     @available(*, deprecated, renamed: "trackConversion(conversionId:)",
-               message: "'clid' is captured by handleOpen(_:) and 'domain' by initialize(apiKey:domain:), so neither needs to be passed. This overload will be removed in 2.0.0.")
+               message: "'clid' is captured by handleOpen(_:) and 'domain' by initialize(apiKey:domain:), so neither needs to be passed. This overload will be removed in future releases.")
     public func trackConversion(clid: String?, domain: String? = nil, conversionId: String? = nil) async throws -> Bool {
         // Skips `ensureInitialized()`: this overload takes `clid`/`domain` directly.
         return try await performTrackConversion(clid: clid, domain: domain, conversionId: conversionId)
@@ -232,7 +232,7 @@ public final class ShortIOSDK: Sendable {
     }
 
     @available(*, deprecated, renamed: "handleOpen(_:)",
-               message: "Use the async handleOpen(_:) instead. This overload will be removed in 2.0.0.")
+               message: "Use the async handleOpen(_:) instead. This overload will be removed in future releases.")
     @MainActor
     public func handleOpen(_ url: URL, completion: @escaping URLHandlerCompletion) {
         Task { @MainActor in

@@ -19,7 +19,7 @@ public struct ShortIOParameters: Encodable, Sendable {
     /// Backing storage, so the SDK does not trigger its own deprecation warning.
     var _domain: String?
 
-    @available(*, deprecated, message: "'domain' is supplied by initialize(apiKey:domain:) and will be removed in 2.0.0. Set it here only to override that for a single call.")
+    @available(*, deprecated, message: "'domain' is supplied by initialize(apiKey:domain:) and will be removed in future releases. Set it here only to override that for a single call.")
     public var domain: String? {
         get { _domain }
         set { _domain = newValue }

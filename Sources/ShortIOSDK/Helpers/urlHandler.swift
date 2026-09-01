@@ -2,7 +2,7 @@ import Foundation
 
 // MARK: - Error Types
 public enum URLHandlerError: LocalizedError, Sendable {
-    @available(*, deprecated, message: "Never thrown. Superseded by ShortIOError.notInitialized. Removed in 2.0.0.")
+    @available(*, deprecated, message: "Never thrown. Superseded by ShortIOError.notInitialized. Will be removed in future releases.")
     case notInitialized
     case invalidURL
     case invalidURLScheme

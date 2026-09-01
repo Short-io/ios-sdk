@@ -140,8 +140,8 @@ public final class ShortIOSDK: Sendable {
         }
         let sealedBox = try AES.GCM.seal(urlData, using: key, nonce: nonce)
 
-        // Encode encrypted data and nonce to Base64
-        let encryptedUrlBase64 = sealedBox.ciphertext.base64EncodedString()
+        // The decrypter is WebCrypto AES-GCM, which expects the tag appended to the ciphertext.
+        let encryptedUrlBase64 = (sealedBox.ciphertext + sealedBox.tag).base64EncodedString()
         let nonceBase64 = sealedBox.nonce.withUnsafeBytes { Data($0).base64EncodedString() }
 
         // Construct secured URL
